@@ -40,6 +40,11 @@ from array import (
     array,
 )
 
+# used for logging
+from logging import (
+    Logger,
+)
+
 # used for validating methods
 from inspect import (
     ismethod,
@@ -261,6 +266,150 @@ class ROS2_obj():
         output += '/>'
 
         return output
+
+
+# =============================================================================
+# Main ROS2 Interface Node Object
+# =============================================================================
+class ROS2_Node(ROS2_obj, Node):
+    '''
+    Main ROS2 Interface Node
+    -
+    Main parent ROS2 interface object to all children Node objects.
+
+    Attributes
+    -
+    - _node_name : `str`
+        - Unique name of the node.
+    - _verbose : `int`
+        - Defaults to `-1` which means no verbosity. Any value 0 or greater
+            represents the number of tabs to indent logs by.
+    - _V : `bool`
+        - Whether or not to display verbose logs.
+    - _verbose_sub : `int`
+        - If sub-routines are called, they will be called with this value of
+            verbosity which will either keep non-verbose or else indent the
+            output by an extra tab as required.
+    
+    `Node` Methods
+    -
+    - create_publisher(msg, topic, queue=10) : `Publisher`
+        - Creates a publisher which publishes data to the given topic. Return
+            value needs to be stored in an instance variable so that commands
+            can be published to the topic.
+    - create_subscription(msg, topic, callback_func, queue=10) : `Subscriber`
+        - Creates a subscriber for the given topic which runs the callback
+            function whenever data is pushed onto the topic. Return value
+            does not require storing.
+    - create_timer(timer_sec, callback_func) : `Timer`
+        - Creates a timer which runs the callback function after each interval.
+            Return value does not required storing.
+    - get_logger() : `Logger`
+        - Creates a logger which can be used for logging and debugging
+            purposes.
+    '''
+
+    # ===========
+    # Constructor
+    def __init__(
+            self,
+            _node_name: str,
+            _verbose: int = -1
+    ) -> None:
+        self._node_name: str = _node_name
+        self._verbose: int = _verbose
+        self._V: bool = _verbose >= 0
+        self._verbose_sub: int = {True: _verbose + 1, False: -1}[self._V]
+
+    # ================
+    # Create Publisher
+    def create_publisher(
+            self,
+            msg: '_MSG',
+            topic: str,
+            queue: int = 10
+    ) -> Publisher:
+        '''
+        Create Publisher
+        -
+        Creates a publisher which publishes data to the given topic. Return
+        value needs to be stored in an instance variable so that commands can
+        be published to the topic.
+
+        Parameters
+        -
+        - msg : `_MSG`
+            - Message datatype being published. This MUST be the original
+                object and not the custom one from `.msgs` defined in this
+                module.
+        - topic : `str`
+            - String value of the topic being published to.
+        - queue : `int`
+            - TODO: Unclear what this is actually for, defaults to 10.
+
+        Returns
+        -
+        `Publisher`
+            - ROS2 publisher for the specified topic.
+        '''
+
+        return super().create_publisher(
+            msg,
+            topic,
+            queue
+        )
+    
+    # =================
+    # Create Subscriber
+    def create_subscription(
+            self,
+            msg: '_MSG',
+            topic: str,
+            callback_func: Callable[['_MSG'], None],
+            queue: int = 10
+    ) -> Subscription:
+        '''
+        Create Subscriber
+        -
+        Creates a subscriber for the given topic which runs the callback
+        function whenever data is pusehd onto the topic. Return value does
+        not require storing.
+
+        Parameters
+        -
+        - msg : `_MSG`
+            - Message datatype being subscribed to. Can be either the original
+                object or the custom one defined in this module in `.msgs`.
+        - topic : `str`
+            - String value of the topic being subscribed to.
+        - callback_func : `Callable[[_MSG], None]`
+            - Callback function to run when the subscriber gets data.
+        - queue : `int`
+            - TODO: Unclear what this is actually for, defaults to 10.
+        '''
+
+        return super().create_subscription(
+            msg,
+            topic,
+            callback_func,
+            queue
+        )
+    
+    # ============
+    # Create Timer
+    def create_timer(
+            self,
+            timer_sec: float,
+            callback_func: Callable[[], None]
+    ) -> Timer:
+        '''
+        
+        '''
+
+        return super().create_timer(
+            timer_sec,
+            callback_func
+        )
 
 
 # =============================================================================

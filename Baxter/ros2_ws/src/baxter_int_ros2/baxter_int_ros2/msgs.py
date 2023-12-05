@@ -114,13 +114,16 @@ class ROS2_msg(ROS2_obj):
     TYPE_LIST: str = 'list'
     TYPE_OTHER: str = 'other type - dont check'
     TYPE_POINT: str = 'geometry_msgs.Point'
+    TYPE_POSE: str = 'geometry_msgs.Pose'
     TYPE_QUARTERNION: str = 'geometry_msgs.Quaternion'
     TYPE_STRING: str = 'string'
     TYPE_TIME: str = 'builtin_interfaces.Time'
+    TYPE_TWIST: str = 'geometry_msgs.Twist'
     TYPE_UINT8: str = 'uint8'
     TYPE_UINT16: str = 'uint16'
     TYPE_UINT32: str = 'uint32'
     TYPE_VECTOR3: str = 'geometry_msgs.Vector3'
+    TYPE_WRENCH: str = 'geometry_msgs.Wrench'
     ALL_TYPES: List[str] = [
         TYPE_ANALOGIOSTATE,
         TYPE_ARRAY,
@@ -134,13 +137,16 @@ class ROS2_msg(ROS2_obj):
         TYPE_LIST,
         TYPE_OTHER,
         TYPE_POINT,
+        TYPE_POSE,
         TYPE_QUARTERNION,
         TYPE_STRING,
         TYPE_TIME,
+        TYPE_TWIST,
         TYPE_UINT8,
         TYPE_UINT16,
         TYPE_UINT32,
         TYPE_VECTOR3,
+        TYPE_WRENCH,
     ]
     
     # ===============
@@ -245,118 +251,130 @@ class ROS2_msg(ROS2_obj):
         # validate datatype
         if (
                 ( # AnalogIOState
-                    (_type == self.TYPE_ANALOGIOSTATE) \
+                    (_type == self.TYPE_ANALOGIOSTATE)
                     and (not isinstance(data, AnalogIOState))
-                ) \
+                )
                 or ( # array
-                    (_type == self.TYPE_ARRAY) \
+                    (_type == self.TYPE_ARRAY)
                     and (not isinstance(data, array))
                 )
                 or ( # bool
-                    (_type == self.TYPE_BOOL) \
+                    (_type == self.TYPE_BOOL)
                     and (not isinstance(data, bool))
-                ) \
+                )
                 or ( # CameraControl
-                    (_type == self.TYPE_CAMERACONTROL) \
+                    (_type == self.TYPE_CAMERACONTROL)
                     and (not isinstance(data, CameraControl))
                 )
                 or ( # float32
-                    (_type == self.TYPE_FLOAT32) \
+                    (_type == self.TYPE_FLOAT32)
                     and (
                         (not (
-                            isinstance(data, float) \
+                            isinstance(data, float)
                             or isinstance(data, int)
-                        )) \
-                        or (data < -3.4e38) \
+                        ))
+                        or (data < -3.4e38)
                         or (data > 3.4e38)
                     )
                 )
                 or ( # float64
-                    (_type == self.TYPE_FLOAT64) \
+                    (_type == self.TYPE_FLOAT64)
                     and (
                         (
                             not (
-                                isinstance(data, float) \
+                                isinstance(data, float)
                                 or isinstance(data, int)
-                            ) \
-                            or (data < -1.7e308) \
+                            )
+                            or (data < -1.7e308)
                             or (data > 1.7e308)
-                        )\
+                        )
                     )
-                ) \
+                )
                 or ( # Header
-                    (_type == self.TYPE_HEADER) \
+                    (_type == self.TYPE_HEADER)
                     and (not isinstance(data, Header))
-                ) \
+                )
                 or ( # int32
-                    (_type == self.TYPE_INT32) \
+                    (_type == self.TYPE_INT32)
                     and (
-                        (not isinstance(data, int)) \
-                        or (data < -2147483648) \
+                        (not isinstance(data, int))
+                        or (data < -2147483648)
                         or (data > 2147483647)
                     )
                 )
                 or ( # int8
-                    (_type == self.TYPE_INT8) \
+                    (_type == self.TYPE_INT8)
                     and (
-                        (not isinstance(data, int)) \
-                        or (data < -128) \
+                        (not isinstance(data, int))
+                        or (data < -128)
                         or (data > 127)
                     )
-                ) \
-                or (
-                    (_type == self.TYPE_LIST) \
+                )
+                or ( # list
+                    (_type == self.TYPE_LIST)
                     and (
-                        (not isinstance(data, list)) \
+                        (not isinstance(data, list))
                         or (len(data) == 0)
                     )
                 )
                 or ( # Point
-                    (_type == self.TYPE_POINT) \
+                    (_type == self.TYPE_POINT)
                     and (not isinstance(data, Point))
-                ) \
+                )
+                or (
+                    (_type == self.TYPE_POSE)
+                    and (not isinstance(data, Pose))
+                )
                 or ( # Quarternion
-                    (_type == self.TYPE_QUARTERNION) \
+                    (_type == self.TYPE_QUARTERNION)
                     and (not isinstance(data, Quaternion))
-                ) \
+                )
                 or ( # string
-                    (_type == self.TYPE_STRING) \
+                    (_type == self.TYPE_STRING)
                     and (
-                        (not isinstance(data, str)) \
+                        (not isinstance(data, str))
                         or (len(data) == 0)
                     )
-                ) \
+                )
                 or ( # Time
-                    (_type == self.TYPE_TIME) \
+                    (_type == self.TYPE_TIME)
                     and (not isinstance(data, Time))
-                ) \
+                )
+                or ( # Twist
+                    (_type == self.TYPE_TWIST)
+                    and (not isinstance(data, Twist))
+                )
                 or ( # uint8
-                    (_type == self.TYPE_UINT8) \
+                    (_type == self.TYPE_UINT8)
                     and (
-                        (not isinstance(data, int)) \
-                        or (data < 0) \
+                        (not isinstance(data, int))
+                        or (data < 0)
                         or (data > 255)
                     )
-                ) \
+                )
                 or ( # uint16
-                    (_type == self.TYPE_UINT16) \
+                    (_type == self.TYPE_UINT16)
                     and (
-                        (not isinstance(data, int)) \
-                        or (data < 0) \
+                        (not isinstance(data, int))
+                        or (data < 0)
                         or (data > 65535)
                     )
-                ) \
+                )
                 or ( # uint32
-                    (_type == self.TYPE_UINT32) \
+                    (_type == self.TYPE_UINT32)
                     and (
-                        (not isinstance(data, int)) \
-                        or (data < 0) \
+                        (not isinstance(data, int))
+                        or (data < 0)
                         or (data > 4294967295)
                     )
-                ) \
+                )
                 or ( # Vector3
-                    (_type == self.TYPE_VECTOR3) \
+                    (_type == self.TYPE_VECTOR3)
                     and (not isinstance(data, Vector3))
+                )
+                or ( # Wrench
+                    (_type == self.TYPE_WRENCH)
+                    and (not isinstance(data, Wrench))    
                 )
         ):
             return (
@@ -534,25 +552,27 @@ class Pose(ROS2_msg, msgPose):
     def __init__(
             self,
             position: 'Point',
-            orientation: 'Quaternion'
+            orientation: 'Quaternion',
+            skip_validation: bool = False
     ) -> None:
         # validate data
-        for _str in (
-                [
-                    self._validate_input(
-                        position,
-                        self.TYPE_POINT
-                    ),
-                    self._validate_input(
-                        orientation,
-                        self.TYPE_QUARTERNION
+        if not skip_validation:
+            for _str in (
+                    [
+                        self._validate_input(
+                            position,
+                            self.TYPE_POINT
+                        ),
+                        self._validate_input(
+                            orientation,
+                            self.TYPE_QUARTERNION
+                        )
+                    ]
+            ):
+                if _str != '':
+                    raise ValueError(
+                        f'ROS2-MSG Pose Construct: {_str}'
                     )
-                ]
-        ):
-            if _str != '':
-                raise ValueError(
-                    f'ROS2-MSG Pose Construct: {_str}'
-                )
             
         # construct instance
         super().__init__()
@@ -588,10 +608,11 @@ class Pose(ROS2_msg, msgPose):
     # ===============
     # Create from MSG
     @staticmethod
-    def from_msg(msg: _MSG) -> ROS2_msg:
+    def from_msg(msg: msgPose) -> 'Pose':
         return Pose(
             position = Point.from_msg(msg.position),
-            orientation = Quaternion.from_msg(msg.orientation)
+            orientation = Quaternion.from_msg(msg.orientation),
+            skip_validation = True
         )
 
 # ==========
@@ -1537,7 +1558,7 @@ class DigitalOutputCommand(ROS2_msg, msgDigitalOutputCommand):
 
     # ==============
     # Create Message
-    def create_msg(self) -> _MSG:
+    def create_msg(self) -> msgDigitalOutputCommand:
         _msg = msgDigitalOutputCommand()
         _msg.name = self.name
         _msg.value = self.value
@@ -1629,20 +1650,74 @@ class EndEffectorState():
 
 # =============
 # EndpointState
-class EndpointState():
+class EndpointState(ROS2_msg, msgEndpointState):
     '''
     baxter_core_msgs - EndPointState
     -
 
     Data
     -
-    header : `Header`
-    pose : `Pose`
-    twist : `Twist`
-    wrench : `Wrench`
+    - header : `Header`
+    - pose : `Pose`
+    - twist : `Twist`
+    - wrench : `Wrench`
     '''
-    def __init__(self) -> None:
-        raise NotImplementedError()
+
+    # ===========
+    # Constructor
+    def __init__(
+            self,
+            header: 'Header',
+            pose: 'Pose',
+            twist: 'Twist',
+            wrench: 'Wrench',
+            skip_validation: bool = False
+    ) -> None:
+        # validate data
+        if not skip_validation:
+            for _str in (
+                    [
+                        self._validate_input(
+                            header,
+                            self.TYPE_HEADER
+                        ),
+                        self._validate_input(
+                            pose,
+                            self.TYPE_POSE
+                        ),
+                        self._validate_input(
+                            twist,
+                            self.TYPE_TWIST
+                        ),
+                        self._validate_input(
+                            wrench,
+                            self.TYPE_WRENCH
+                        )
+                    ]
+            ):
+                if _str != '':
+                    raise ValueError(
+                        f'ROS2-MSG EndpointState Construct: {_str}'
+                    )
+                
+        # construct instance
+        super().__init__()
+        self.header = header
+        self.pose = pose
+        self.twist = twist
+        self.wrench = wrench
+
+    # ===============
+    # Create from MSG
+    @staticmethod
+    def from_msg(msg: msgEndpointState) -> 'EndpointState':
+        return EndpointState(
+            header = Header.from_msg(msg.header),
+            pose = Pose.from_msg(msg.pose),
+            twist = Twist.from_msg(msg.twist),
+            wrench = Wrench.from_msg(msg.wrench),
+            skip_validation = True
+        )
 
 # ==============
 # EndpointStates
@@ -1833,26 +1908,141 @@ class Image(ROS2_msg, msgImage):
 
 # =============
 # JointCommand
-class JointCommand():
+class JointCommand(ROS2_msg, msgJointCommand):
     '''
     baxter_core_msgs - JointCommand
     -
 
     Data
     -
-    - mode : `int`
-    - command : `list[float]`
-    - names : `list[str]`
+    - mode : `int32`
+    - command : `float64[]`
+    - names : `string[]`
 
     Constants
     -
-    - POSITION_MODE : `int`
-    - VELOCITY_MODE : `int`
-    - TORQUE_MODE : `int`
-    - RAW_POSITION_MODE : `int`
+    - POSITION_MODE : `int32`
+    - VELOCITY_MODE : `int32`
+    - TORQUE_MODE : `int32`
+    - RAW_POSITION_MODE : `int32`
     '''
-    def __init__(self) -> None:
-        raise NotImplementedError()
+
+    # =========
+    # Constants
+    POSITION_MODE: int = 1
+    VELOCITY_MODE: int = 2
+    TORQUE_MODE: int = 3
+    RAW_POSITION_MODE: int = 4
+    NAME_L_E0: str = 'left_e0'
+    NAME_L_E1: str = 'left_e1'
+    NAME_L_S0: str = 'left_s0'
+    NAME_L_S1: str = 'left_s1'
+    NAME_L_W0: str = 'left_w0'
+    NAME_L_W1: str = 'left_w1'
+    NAME_L_W2: str = 'left_w2'
+    NAMES_L: List[str] = [
+        NAME_L_E0,
+        NAME_L_E1,
+        NAME_L_S0,
+        NAME_L_S1,
+        NAME_L_W0,
+        NAME_L_W1,
+        NAME_L_W2,
+    ]
+    NAME_R_E0: str = 'right_e0'
+    NAME_R_E1: str = 'right_e1'
+    NAME_R_S0: str = 'right_s0'
+    NAME_R_S1: str = 'right_s1'
+    NAME_R_W0: str = 'right_w0'
+    NAME_R_W1: str = 'right_w1'
+    NAME_R_W2: str = 'right_w2'
+    NAMES_R: List[str] = [
+        NAME_R_E0,
+        NAME_R_E1,
+        NAME_R_S0,
+        NAME_R_S1,
+        NAME_R_W0,
+        NAME_R_W1,
+        NAME_R_W2,
+    ]
+    NAMES_ALL: List[str] = NAMES_L + NAMES_R
+
+    # ===========
+    # Constructor
+    def __init__(
+            self,
+            mode: int,
+            command: array,
+            names: array,
+            skip_validation: bool = False
+    ) -> None:
+        # validate data
+        if not skip_validation:
+            for _str in (
+                    [
+                        self._validate_input(
+                            mode,
+                            self.TYPE_INT32,
+                            options = [
+                                self.POSITION_MODE,
+                                self.VELOCITY_MODE,
+                                self.TORQUE_MODE,
+                                self.RAW_POSITION_MODE,
+                            ]
+                        ),
+                        self._validate_input(
+                            command,
+                            self.TYPE_ARRAY
+                        ),
+                        self._validate_input(
+                            names,
+                            self.TYPE_ARRAY
+                        )
+                    ] + [
+                        self._validate_input(
+                            cmd,
+                            self.TYPE_FLOAT64
+                        )
+                        for cmd in command
+                    ] + [
+                        self._validate_input(
+                            name,
+                            self.TYPE_STRING,
+                            options = self.NAMES_ALL
+                        )
+                        for name in names
+                    ]
+            ):
+                if _str != '':
+                    raise ValueError(
+                        f'ROS2-MSG JointCommand Construct: {_str}'
+                    )
+                
+        # construct instance
+        super().__init__()
+        self.mode = mode
+        self.command = command
+        self.names = names
+
+    # ===============
+    # Create from MSG
+    @staticmethod
+    def from_msg(msg: msgJointCommand) -> 'JointCommand':
+        return JointCommand(
+            mode = msg.mode,
+            command = msg.command,
+            names = msg.names,
+            skip_validation = True
+        )
+    
+    # ==============
+    # Create Message
+    def create_msg(self) -> msgJointCommand:
+        m = msgJointCommand()
+        m.mode = self.mode
+        m.command = self.command
+        m.names = self.names
+        return m
 
 # ==============
 # NavigatorState

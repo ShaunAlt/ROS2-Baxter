@@ -4,10 +4,10 @@
 # Created by: Shaun Altmann
 # =============================================================================
 '''
-ROS2 Baxter Digital IO Interface
+ROS2 Baxter Limbs Interfaces
 -
 Contains object and method definitions required for interacting with the
-Digital IO topics (digital buttons and sensors) of Baxter.
+Limb topics (arm segments) of Baxter.
 '''
 # =============================================================================
 
@@ -30,8 +30,8 @@ from . import (
     Subscription,
 
     # - baxter_core_msgs
-    msgDigitalIOState,
-    msgDigitalOutputCommand,
+    msgEndpointState,
+    msgJointCommand,
 
     # - .dataflow
     df_wait,
@@ -41,8 +41,8 @@ from . import (
     Topics,
 
     # - .msgs
-    MSG_DigitalIOState,
-    MSG_DigitalOutputCommand,
+    MSG_EndpointState,
+    MSG_JointCommand,
 )
 
 
@@ -143,6 +143,7 @@ class DigitalIO(Node):
         # create publisher
         if verbose: print(f'| - Creating Publisher, topic_cmd={self.topic_cmd}')
         self._publisher = self.create_publisher(
+            # MSG_DigitalOutputCommand,
             msgDigitalOutputCommand,
             self.topic_cmd,
             10
