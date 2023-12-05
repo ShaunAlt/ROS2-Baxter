@@ -1,0 +1,24 @@
+# =============================================================================
+# Key Ubuntu Data
+# Created By: Shaun Altmann
+#
+# Contains a list of common ubuntu commands that I've used and want to
+#   remember.
+# =============================================================================
+
+
+# =============================================================================
+# ROS2 CLI
+# =============================================================================
+
+# ==============
+Create a Package 
+    >>> ros2 pkg create --build-type << build type >> << pkg name >>
+
+    Build Types:
+        - ament_cmake : Used for creating interfaces
+        - ament_python : Used for creating python packages
+
+# =============================================================================
+# End of File
+# =============================================================================
