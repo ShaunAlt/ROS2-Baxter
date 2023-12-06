@@ -18,16 +18,14 @@ Digital IO topics (digital buttons and sensors) of Baxter.
 
 from . import (
     # - typing
+    _DATA,
     Any,
     List,
     Optional,
     TYPE_CHECKING,
 
     # - rclpy
-    Node,
     Publisher,
-    spin,
-    Subscription,
 
     # - baxter_core_msgs
     msgDigitalIOState,
@@ -38,6 +36,7 @@ from . import (
     Signal,
 
     # - .
+    ROS2_Node,
     Topics,
 
     # - .msgs
@@ -55,7 +54,7 @@ ERR_DIR: str = 'baxter_int_ros2.digital_io'
 # =============================================================================
 # Baxter Digital IO Object
 # =============================================================================
-class DigitalIO(Node):
+class DigitalIO(ROS2_Node):
     '''
     Baxter Digital IO Object
     -
@@ -76,7 +75,7 @@ class DigitalIO(Node):
     def __init__(
             self,
             topic: str,
-            verbose: bool = False
+            verbose: int = -1
     ) -> None:
         '''
         Baxter Digital IO Constructor
@@ -90,75 +89,80 @@ class DigitalIO(Node):
             - Digital IO topic to subscribe to. Must be in 
                 `Topics.DigitalIO.ALL`.
         - verbose : `bool`
-            - Whether or not to produce detailed logs about the function.
-                Defaults to `False`.
+            - Defaults to `-1` which means no verbosity. Any value 0 or greater
+                represents the number of tabs to indent logs by.
 
         Returns
         -
         None
         '''
 
-        if verbose: print(f'Constructing DigitalIO, topic={topic}')
-
-        # initialize attributes
-        if verbose: print('| - Initializing Variables')
-        self._node_name: str
-        self._output_enabled: bool
-        self._publisher: Publisher
-        self._subscriber: Subscription
-        self._state: Optional[bool]
-        self._topic: str
-        self.state_changed: Signal
-
         # validate the topic
-        if verbose: print('| - Validating Topic')
         if not topic in Topics.DigitalIO.ALL:
             raise ValueError(
                 f'{ERR_DIR}.DigitalIO.__init__ unable to ' \
                     f'construct object with invalid topic: topic = {topic}, ' \
                     f'type = {type(topic)}'
             )
-        
-        # create main attributes
-        if verbose: print('| - Creating Main Attributes')
-        self._topic = topic
-        self._output_enabled = False
-        self._state = None
-        self._node_name = f'BaxterDigitalIO_{topic}'
-        self.state_changed = Signal()
 
         # initialize node
-        if verbose: print(f'| - Creating Node (node_name={self._node_name})')
-        super().__init__(self._node_name)
+        super().__init__(
+            f'Baxter_DigitalIO_{topic}',
+            verbose
+        )
+        _t = '\t' * self._verbose
+        if self._V: print(f'{_t}Constructing DigitalIO - topic={topic}')
 
-        # create subscriber
-        if verbose: print(f'| - Creating Subscriber, topic={self.topic}')
-        self._subscriber = self.create_subscription(
-            MSG_DigitalIOState,
+        # create main attributes
+        if self._V: print(f'{_t}| - Creating Main Attributes')
+        self._topic: str = topic
+        self._output_enabled: bool = False
+        self._state: Optional[bool] = None
+        self.state_changed = Signal()
+
+        # create subscribers
+        if self._V: print(f'{_t}| - Creating Subscribers')
+        if self._V: print(f'{_t}| - State Change - topic={self.topic}')
+        self.create_sub(
+            msgDigitalIOState,
             self.topic,
             self._subscriber_callback,
             10
         )
 
-        # create publisher
-        if verbose: print(f'| - Creating Publisher, topic_cmd={self.topic_cmd}')
-        self._publisher = self.create_publisher(
+        # create publishers
+        if self._V: print(f'{_t}| - Creating Publishers')
+        if self._V: print(f'{_t}| - Output Command - topic={self.topic_cmd}')
+        self._publisher = self.create_pub(
             msgDigitalOutputCommand,
             self.topic_cmd,
             10
         )
-        
-        if verbose: print('| - -----\n| - Done.\n| - -----')
-    
-    # ===================
-    # Custom REPR and STR
-    def __repr__(self) -> str:
-        return (
-            f'DigitalIO(_topic = {self._topic}, topic = {self.topic}, ' \
-                + f'topic_cmd = {self.topic_cmd})'
-        )
-    def __str__(self) -> str:
-        return f'DigitalIO<"{self.topic}">'
+
+        if self._V:
+            print(
+                f'{_t}| - Finished Creating:\n{_t}' \
+                    + repr(self).replace('\n', f'\n\t{_t}')
+            )
+        else:
+            print(f'Created {self}')
+
+    # ===============
+    # Get Object Data
+    def _get_data(self, short: bool = False) -> _DATA:
+        if short:
+            return {
+                'node_name': self._node_name,
+                'topic': self.topic,
+            }
+        return {
+            '_node_name': self._node_name,
+            '_topic': self._topic,
+            '_output_enabled': self._output_enabled,
+            '_state': self._state,
+            'topic': self.topic,
+            'topic_cmd': self.topic_cmd,
+        }
 
     # =================
     # Full Topic String
@@ -280,12 +284,6 @@ class DigitalIO(Node):
                 ),
                 during_func = lambda: self._publisher.publish(cmd)
             )
-
-    # ==================
-    # Node: Destroy Node
-    def destroy_node(self) -> None:
-        ''' Node: Destroy Node '''
-        super().destroy_node()
 
 
 # =============================================================================

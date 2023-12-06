@@ -25,6 +25,7 @@ setup(
             'digital_io_test = baxter_dev.digital_io_test:main',
             'camera_test = baxter_dev.camera_test:main',
             'client_stream_image = baxter_dev.clients:stream_image',
+            'streamer = baxter_dev.streamer:main',
         ],
     },
 )

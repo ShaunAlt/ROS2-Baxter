@@ -35,16 +35,15 @@ from . import (
     cv2,
 
     # - rclpy
-    Client,
-    Node,
     Publisher,
-    Service,
-    Subscription,
     spin_until_future_complete,
     Timer,
 
     # - sensor_msgs
     msgImage,
+
+    # - baxter_int_ros2_support
+    msgCameraData,
 
     # - .dataflow
     df_wait,
@@ -53,36 +52,24 @@ from . import (
     # - .
     _DATA,
     _TIMER,
-    ROS2_obj,
-    Services,
+    ROS2_Node,
     Topics,
 
     # - .msgs
     MSG_Image,
-
-    # - srvs
-    srvCameraData,
-    SRV_CameraData,
-    SRV_CloseCamera,
-    SRV_ListCameras,
-    SRV_OpenCamera,
+    MSG_CameraData,
 )
 
 
 # =============================================================================
 # Baxter Camera Object
 # =============================================================================
-class Camera(Node, ROS2_obj):
+class Camera(ROS2_Node):
     '''
     Baxter Camera Object
     -
     Baxter interface object which is able to connect to a single Camera on the
     Baxter robot.
-
-    Topics
-    -
-    - Servicing:
-        - {topic}/image_service
 
     Attributes
     -
@@ -117,9 +104,8 @@ class Camera(Node, ROS2_obj):
         - topic : `str`
             - Camera topic to subscribe to. Must be in `Topics.Camera.ALL`.
         - verbose : `int`
-            - Defaults to `-1`, which means no verbosity. Any value 0 or
-                greater corresponds to verbosity with the specified number of
-                tabs used for indentation.
+            - Defaults to `-1` which means no verbosity. Any value 0 or greater
+                represents the number of tabs to indent logs by.
         - image_display_rt : `bool`
             - Whether or not to open up the image with OpenCV and display it
                 real-time (updating every time the subscriber gets new data).
@@ -135,94 +121,65 @@ class Camera(Node, ROS2_obj):
         None
         '''
 
-        # initialize verbosity loggers
-        V: bool = verbose >= 0
-        _t: str = '\t' * verbose
-        _sub_v: int = {True: verbose + 1, False: -1}[V]
-        if V: print(f'{_t}Constructing Camera, topic={topic}')
-
-        # initialize attributes
-        if V: print(f'{_t}| - Initializing Attributes')
-        _cli_cam_list: Client
-        _cam_list: SRV_ListCameras.Response
-        self._cli_close: Client
-        self._cli_open: Client
-        self._data_img: Optional[MSG_Image]
-        self._image_display_rt: bool = image_display_rt
-        self._node_name: str
-        self._number_updates_since_last_print: int = 0
-        self._srv_img: Service
-        self._sub_img: Subscription
-        self._topic: str
-        self.update_img: Signal
-        self.verbose: int = verbose
-
         # validate the topic
-        if V: print(f'{_t}| - Validating Topic')
         if not topic in Topics.Camera.ALL:
             raise ValueError(
                 f'{self.ERR_DIR}.__init__ unable to construct object with ' \
                     + f'invalid topic: topic = {topic}, type = {type(topic)}'
             )
         
+        # initialize node
+        super().__init__(
+            f'Baxter_Camera_{topic}',
+            verbose
+        )
+        _t = '\t' * self._verbose
+        if self._V: print(f'{_t}Constructing Camera - topic={topic}')
+        
         # create main attributes
-        if V: print(f'{_t}| - Creating Main Attributes')
-        self._node_name = f'Baxter_Camera_{topic}'
-        self._topic = topic
-        self._data_img = None
+        if self._V: print(f'{_t}| - Creating Main Attributes')
+        self._data_img: Optional[MSG_Image] = None
+        self._image_display_rt: bool = image_display_rt
+        self._number_updates_since_last_print: int = 0
+        self._topic: str = topic
         self.update_img = Signal()
 
-        # initialize node
-        if V: print(f'{_t}| - Creating Node')
-        super().__init__(self._node_name)
-
-        # validate camera can be created
-        # if V: print(f'{_t}| - Validating Camera against Camera List Service')
-        # _cli_cam_list = self.create_client(
-        #     SRV_ListCameras,
-        #     'cameras/list'
-        # )
-        # while not _cli_cam_list.wait_for_service(timeout_sec = 1.0):
-        #     if V: print(f'{_t}\t| - Service unavailable, trying again ...')
-        # _cam_list = _cli_cam_list.call_async(SRV_ListCameras.Request())
-        # spin_until_future_complete(self, _cam_list)
-        # if V: print(f'{_t}\t| - Camera List: {repr(_cam_list.cameras)}')
-        # if V: print(f'{_t}\t| - Valid Topic: {topic in _cam_list.cameras}')
-
         # create subscribers
-        if V: print(f'{_t}| - Creating Subscribers')
-        if V: print(f'{_t}\t| - Creating Image Subscriber')
-        self._sub_img = self.create_subscription(
-            MSG_Image,
+        if self._V: print(f'{_t}| - Creating Subscribers')
+        if self._V: print(f'{_t}\t| - Creating Image Subscriber')
+        self.create_sub(
+            msgImage,
             self.topic_img,
             self.sub_img_callback,
             10
         )
 
-        # create services
-        if V: print(f'{_t}| - Creating Services')
-        if V: print(f'{_t}\t| - Creating Image Service')
-        self._srv_img = self.create_service(
-            srvCameraData,
-            self.topic_img_srv,
-            self.srv_img_callback
+        # create publishers
+        if self._V: print(f'{_t}| - Creating Publishers')
+        if self._V: print(f'{_t}\t| - Image Data - topic={self.topic_img_pub}')
+        self._pub_img = self.create_pub(
+            msgCameraData,
+            self.topic_img_pub,
+            10
         )
 
-        # create publishers
-        if V: print(f'{_t}| - Creating Publishers')
-
         # create timers
-        if V: print(f'{_t}| - Creating Timers')
+        if self._V: print(f'{_t}| - Creating Timers')
         if print_image_timer > 0:
-            if V:
+            if self._V:
                 print(
                     f'{_t}| - Creating Print Image Timer: Time = ' \
                         + f'{print_image_timer}'
                 )
-            self.create_timer(print_image_timer, self.print_image_data)
+            self.create_tim(print_image_timer, self.print_image_data)
 
-        if V: 
-            print(f'{_t}| - Created ' + repr(self).replace('\n', '\n\t\t'))
+        if self._V:
+            print(
+                f'{_t}| - Finished Creating:\n{_t}' \
+                    + repr(self).replace('\n', f'\n\t{_t}')
+            )
+        else:
+            print(f'Created {self}')
 
     # ===============
     # Get Object Data
@@ -240,7 +197,6 @@ class Camera(Node, ROS2_obj):
                     'topic_img': self.topic_img,
                     'data_img': self.data_img,
                     '_image_display_rt': self._image_display_rt,
-                    'verbose': self.verbose,
                 },
             }[short]
         )
@@ -273,12 +229,12 @@ class Camera(Node, ROS2_obj):
         ''' Topic name of the Image for the `Camera`. '''
         return f'{self.topic}/image'
     
-    # ===================
-    # Image Service Topic
+    # =====================
+    # Image Publisher Topic
     @property
-    def topic_img_srv(self) -> str:
-        ''' Topic name of the Image Service for the `Camera`. '''
-        return f'{self.topic}/{Services.Camera.IMAGE_DATA}'
+    def topic_img_pub(self) -> str:
+        ''' Topic name of the Image Publisher for the `Camera`. '''
+        return f'{self.topic}/{Topics.Camera.IMAGE_DATA}'
     
     # =========================
     # Image Subscriber Callback
@@ -302,11 +258,8 @@ class Camera(Node, ROS2_obj):
         None
         '''
 
-        # parse data
-        msg = MSG_Image.from_msg(_msg)
-
         # update data
-        self._data_img = msg
+        self._data_img = MSG_Image.from_msg(_msg)
 
         # notify data update
         self.update_img(self.data_img)
@@ -316,50 +269,16 @@ class Camera(Node, ROS2_obj):
         if self._image_display_rt:
             self.opencv_image_display()
 
-    # ======================
-    # Image Service Callback
-    def srv_img_callback(
-            self,
-            request: srvCameraData.Request,
-            response: srvCameraData.Response
-    ) -> srvCameraData.Response:
-        '''
-        Camera Image Service Callback
-        -
-        Runs whenever a client pings the `Camera` image service topic.
-
-        Parameters
-        -
-        request : `srvCameraData.Request`
-            Camera image data request.
-        response : `srvCameraData.Response`
-            Camera image data response.
-
-        Returns
-        -
-        None
-        '''
-
-        print(f'Image Service Callback {self.topic}')
-
-        # create response
-        if self.data_img is not None:
-            response.img_data = self.data_img.data
-            response.height = self.data_img.height
-            response.width = self.data_img.width
-            response.step = self.data_img.step
-        else:
-            response.img_data = array('B', [])
-            response.height = 0
-            response.width = 0
-            response.step = 0
-        # while self.data_img is None:
-        #     print(f'\t| - Waiting for initial Camera Data {self.topic}')
-        # response.img_data = self.data_img.data
-        # response.height = self.data_img.height
-        # response.width = self.data_img.width
-        # response.step = self.data_img.step
-        return response
+        # publish image data
+        self._pub_img.publish(
+            MSG_CameraData(
+                image = self._data_img.data,
+                width = self._data_img.width,
+                height = self._data_img.height,
+                channels = self._data_img.channels,
+                skip_validation = True
+            ).create_msg()
+        )
 
     # ===================================
     # Show current camera image in OpenCV
@@ -380,9 +299,8 @@ class Camera(Node, ROS2_obj):
         '''
 
         # verbosity
-        _t: str = '\t' * self.verbose
-        V: bool = self.verbose >= 0
-        if V: print(f'{_t}Displaying Image Data for {self.topic}')
+        _t: str = '\t' * self._verbose_sub
+        if self._V: print(f'{_t}Displaying Image Data for {self.topic}')
 
         # makes sure data exists
         if self.data_img is None:
@@ -392,10 +310,10 @@ class Camera(Node, ROS2_obj):
             )
 
         # convert image list to numpy array
-        if V: print(f'{_t}| - Converting Image to NumPy ({self.topic})')
+        if self._V: print(f'{_t}| - Converting Image to NumPy ({self.topic})')
         _img = numpy.array(self.data_img.data, dtype = numpy.uint8)
-        if V: print(f'{_t}| - {self.topic} Image 1D: Shape = {_img.shape}')
-        if V: print(f'{_t}| - Converting NumPy Array 1D to 3D')
+        if self._V: print(f'{_t}| - {self.topic} Image 1D: Shape = {_img.shape}')
+        if self._V: print(f'{_t}| - Converting NumPy Array 1D to 3D')
         _img = numpy.reshape(
             _img, 
             (
@@ -404,14 +322,14 @@ class Camera(Node, ROS2_obj):
                 self.data_img.channels,
             )
         )
-        if V: print(f'{_t}| - {self.topic} Image 3D: Shape = {_img.shape}')
+        if self._V: print(f'{_t}| - {self.topic} Image 3D: Shape = {_img.shape}')
 
         # convert image colour
-        if V: print(f'{_t}| - Converting Image Colour ({self.topic})')
+        if self._V: print(f'{_t}| - Converting Image Colour ({self.topic})')
         _img = cv2.cvtColor(_img, cv2.COLOR_BGRA2BGR)
 
         # display image
-        if V: print(f'{_t}| - Displaying Image ({self.topic})')
+        if self._V: print(f'{_t}| - Displaying Image ({self.topic})')
         cv2.imshow(f'Camera {self.topic} Image', _img)
         if (cv2.waitKey(1) & 0xff) == 27: # 27 = Escape key ASCII code
             raise ConnectionAbortedError
@@ -448,129 +366,187 @@ class Camera(Node, ROS2_obj):
 
 
 # =============================================================================
-# Baxter Camera Client Objects
+# Image Processor
 # =============================================================================
-class Client_Camera(Node, ROS2_obj):
+class Image_Processor(ROS2_Node):
     '''
-    Baxter Camera Client Object
+    Image Processor
     -
-    Baxter interface object which is a client for a specific Baxter Camera
-    topic.
-    '''
+    Processes an image from 1 topic and publishes the result of the image
+    processing in a different topic.
 
-    ERR_DIR: str = 'baxter_int_ros2.camera.Client_Camera'
+    Attributes
+    -
+    None
+
+    Methods
+    -
+    None
+    '''
 
     # ===========
     # Constructor
     def __init__(
             self,
             topic: str,
-            service: str,
-            timer: float = 1.0,
-            verbose: int = -1,
-            stream_video: bool = False
+            process_table: bool = False,
+            verbose: int = -1
     ) -> None:
         '''
-        Baxter Camera Client Constructor
+        Image Process Constructor
         -
-        Initializes an instance of the Baxter interface object which is a
-        client to a specific service of a particular `Camera`.
+        Initializes an instance of the Image Processor object which is able to
+        connect to a single camera image feed and process the data as required.
 
         Parameters
         -
         - topic : `str`
-            - Camera topic to be a client to. Must be in `Topics.Camera.ALL`.
-        - service : `str`
-            - Camera service to be a client to. Must be in 
-                `Services.Camera.ALL`.
+            - Topic to subscribe the image processor to. Must be in
+                `Topics.Camera.ALL`.
+        - process_table : `bool`
+            - Whether or not to process the image and identify where the table
+                is in the image, as well as drawing a box around it with points
+                at each corner and in the centre.
         - verbose : `int`
-            - Defaults to `-1`, which means no verbosity. Any value 0 or
-                greater corresponds to verbosity with the specified number of 
-                tabs used for indentation.
-        - stream_video : `bool`
-            - Defaults to `False`. When `True`, means that the camera data will
-                be streamed into a viewable video feed.
+            - Defaults to `-1` which means no verbosity. Any value 0 or greater
 
         Returns
         -
         None
         '''
 
-        # initialize verbosity loggers
-        V: bool = verbose >= 0
-        _t: str = '\t' * verbose
-        _sub_v: int = {True: verbose + 1, False: -1}[V]
-        if V: 
-            print(
-                f'{_t}Constructing Camera Client, topic = {topic}, service =' \
-                    + f' {service}'
-            )
-        
-        # initialize attributes
-        if V: print(f'{_t}| - Initializing Variables')
-        self._flags: Dict[str, bool]
-        self._node_name: str
-        self._service: str
-        self._topic: str
-        self._verbose: int
-        self.client: Client
-        self.req: srvCameraData.Request
-
-        # validating topic and service
-        if V: print(f'{_t}| - Validating Topic and Service')
+        # validate the topic
         if not topic in Topics.Camera.ALL:
             raise ValueError(
-                f'{self.ERR_DIR}.__init__ unable to construct object with ' \
-                    + f'invalid topic: topic = {repr(topic)}'
-            )
-        if not service in Services.Camera.ALL:
-            raise ValueError(
-                f'{self.ERR_DIR}.__init__ unable to construct object with ' \
-                    + f'invalid service: service = {repr(service)}'
+                'Image_Processor unable to construct object with invalid' \
+                    + f' topic: topic = {repr(topic)}'
             )
         
-        # create main attributes
-        if V: print(f'{_t}| - Creating Main Attributes')
-        self._flags = {
-            'stream_video': stream_video,
-        }
-        self._node_name = f'Baxter_Client_Camera_{topic}__{service}'
-        self._service = service
-        self._topic = topic
-        self._verbose = _sub_v
-
         # initialize node
-        if V: print(f'{_t}| - Creating Node')
-        super().__init__(self._node_name)
-
-        # create client
-        if V: print(f'{_t}| - Creating Client')
-        self._client = self.create_client(
-            srvCameraData,
-            self.topic
+        super().__init__(
+            f'ROS2_ImageProcessor_{topic.replace("/","__")}',
+            verbose
         )
-        while not self._client.wait_for_service(timeout_sec = 1.0):
-            print(f'{_t}\t| - Service not available, waiting for connection')
-        self.req = srvCameraData.Request()
+        _t = '\t' * self._verbose
+        if self._V: print(f'{_t}Constructing Image Processor - topic={topic}')
 
-        # create timer
-        if V: print(f'{_t}| - Create Timer ({timer})')
-        self.create_timer(timer, self.timer_callback)
+        # create main attributes
+        if self._V: print(f'{_t}| - Creating Main Attributes')
+        self._data: Optional[MSG_CameraData] = None
+        self._process_table: bool = process_table
+        self._topic = topic
+        self.state_changed = Signal()
 
-    # =============
-    # Service Topic
+        # create subscribers
+        if self._V: print(f'{_t}| - Creating Subscribers')
+        if self._V: print(f'{_t}\t| - Image Processing')
+        self.create_sub(
+            msgCameraData,
+            self.topic_sub,
+            self.sub_callback_process
+        )
+
+        # create publishers
+        if self._V: print(f'{_t}| - Creating Publishers')
+        if self._V: print(f'{_t}\t| - Table Processor')
+        self._pub_table = self.create_pub(
+            msgCameraData,
+            self.topic_table
+        )
+        self._pub_table_gray = self.create_pub(
+            msgCameraData,
+            f'{self.topic_table}/gray'
+        )
+        self._pub_table_blur = self.create_pub(
+            msgCameraData,
+            f'{self.topic_table}/blur'
+        )
+        self._pub_table_edge = self.create_pub(
+            msgCameraData,
+            f'{self.topic_table}/edge'
+        )
+
+        if self._V:
+            print(
+                f'{_t}| - Finished Created:\n{_t}\t' \
+                    + repr(self).replace('\n', f'\n\t{_t}')
+            )
+        else:
+            print(f'Created {self}')
+
+    # ===============
+    # Get Object Data
+    def _get_data(self, short: bool = False) -> _DATA:
+        return cast(
+            _DATA,
+            {
+                True: {
+                    'node_name': self._node_name,
+                    'topic': self.topic,
+                },
+                False: {
+                    'node_name': self._node_name,
+                    'topic': self.topic,
+                    'data': self._data
+                },
+            }[short]
+        )
+
+    # ==========
+    # Main Topic
     @property
     def topic(self) -> str:
-        ''' Camera Client Service Topic. '''
-        return f'/cameras/{self._topic}/{self._service}'
+        ''' Base topic for getting the image from. '''
+        return f'/cameras/{self._topic}'
+    
+    # ================
+    # Subscriber Topic
+    @property
+    def topic_sub(self) -> str:
+        ''' Subscriber Topic. '''
+        return f'{self.topic}/{Topics.Camera.IMAGE_DATA}'
+    
+    # ===============================
+    # Publisher Topic - Table Process
+    @property
+    def topic_table(self) -> str:
+        ''' Publisher Topic - Used for publishing processed table image. '''
+        return f'{self.topic}/{Topics.Camera.PROCESS_DATA_TABLE}'
 
-    # ====================
-    # Send Service Request
-    def send_request(self) -> srvCameraData.Response:
+    # ==========================
+    # Image Processor Subscriber
+    def sub_callback_process(
+            self,
+            msg: msgCameraData
+    ) -> None:
         '''
-        Send Service Request
+        Image Processor Subscriber
         -
-        Sends a ROS2 request to the `Client_Camera` service.
+        Runs whenever data is published to the topic that this 
+        `Image_Processor` is subscribed to.
+
+        Parameters
+        -
+        - msg : `msgCameraData`
+            - Contains the data from the image passed through the topic.
+
+        Returns
+        -
+        None
+        '''
+
+        # update data
+        self._data = MSG_CameraData.from_msg(msg)
+        if self._process_table:
+            self.process_table()
+
+    # =================
+    # Process the Table
+    def process_table(self) -> None:
+        '''
+        Process the Table
+        -
+        Process the image data and identify the table.
 
         Parameters
         -
@@ -581,43 +557,223 @@ class Client_Camera(Node, ROS2_obj):
         None
         '''
 
-        # initialize verbosity loggers
-        V: bool = self._verbose >= 0
-        _t: str = '\t' * self._verbose
-        if V: print(f'{_t}Send Service Request {self.topic}')
+        # make sure data exists
+        if self._data is None:
+            raise RuntimeWarning(
+                f'Image_Processor {self} tried to process_table with no' \
+                    + ' valid data.'
+            )
+        
+        # convert image array to numpy array
+        _i = numpy.array(self._data.image, dtype = numpy.uint8)
+        _i = _i.reshape(
+            self._data.height,
+            self._data.width,
+            self._data.channels
+        )
+        _i = cv2.cvtColor(_i, cv2.COLOR_BGRA2BGR)
 
-        # create request
-        if V: print(f'{_t}| - Create Request {self.topic}')
-        # self.req = srvCameraData.Request()
-
-        # get service response
-        if V: print(f'{_t}| - Get Response {self.topic}')
-        if V: print(f'{_t}\t| - Call Async {self.topic}')
-        self.future = self._client.call_async(self.req)
-        if V: print(f'{_t}\t| - Spinning until Call Complete {self.topic}')
-        spin_until_future_complete(self, self.future)
-        if V: print(f'{_t}\t| - Creating Response {self.topic}')
-        res: srvCameraData.Response = self.future.result()
-        if V: print(f'{_t}\t| - Done {self.topic}')
-
-        # handle response
-        if V:
-            print(f'{_t}| - Response Data:')
-            print(f'{_t}\t| - Width: {res.width}')
-            print(f'{_t}\t| - Height: {res.height}')
-            print(f'{_t}\t| - Step: {res.step}')
-
-        if V: print(f'{_t}| - Done')
-
-        return res
-
-    # ==============
-    # Timer Callback
-    def timer_callback(self) -> None:
         '''
-        Timer Callback
+        Processing from:
+        https://medium.com/mlearning-ai/document-scanner-using-opencv-with-
+        source-code-easiest-way-e0543e1f3a72
+        '''
+
+        # get gray image
+        _i_gray = cv2.cvtColor(_i.copy(), cv2.COLOR_BGR2GRAY)
+        _i_blur = cv2.GaussianBlur(_i_gray, (3, 3), 0) # (5,5)
+        _i_edge = cv2.Canny(_i_blur, 20, 75) # 75, 200
+
+        _contours, _ = cv2.findContours(
+            _i_edge.copy(),
+            cv2.RETR_LIST,
+            cv2.CHAIN_APPROX_SIMPLE
+        )
+        _contours = sorted(_contours, key=cv2.contourArea, reverse = True)[:5]
+        doc = []
+        for c in _contours:
+            peri = cv2.arcLength(c, True)
+            approx = cv2.approxPolyDP(c, 0.02*peri, True)
+            if len(approx) == 4:
+                doc = approx
+                break
+        p = []
+        for d in doc:
+            tuple_point = tuple(d[0])
+            cv2.circle(_i, tuple_point, 3, (0, 0, 255), 4)
+            p.append(tuple_point)
+        
+        self._pub_table_gray.publish(
+            MSG_CameraData(
+                image = _i_gray.flatten().tolist(), # type: ignore
+                width = self._data.width,
+                height = self._data.height,
+                channels = 1,
+                skip_validation = True
+            ).create_msg()
+        )
+        self._pub_table_blur.publish(
+            MSG_CameraData(
+                image = _i_blur.flatten().tolist(), # type: ignore
+                width = self._data.width,
+                height = self._data.height,
+                channels = 1,
+                skip_validation = True
+            ).create_msg()
+        )
+        self._pub_table_edge.publish(
+            MSG_CameraData(
+                image = _i_edge.flatten().tolist(), # type: ignore
+                width = self._data.width,
+                height = self._data.height,
+                channels = 1,
+                skip_validation = True
+            ).create_msg()
+        )
+        self._pub_table.publish(
+            MSG_CameraData(
+                image = _i.flatten().tolist(), # type: ignore
+                width = self._data.width,
+                height = self._data.height,
+                channels = 3,
+                skip_validation = True
+            ).create_msg()
+        )
+
+
+# =============================================================================
+# Image Viewer
+# =============================================================================
+class Image_Viewer(ROS2_Node):
+    '''
+    Image Viewer
+    -
+    Streams the image data from a given ROS2 topic.
+    '''
+
+    # ===========
+    # Constructor
+    def __init__(
+            self,
+            topic: str,
+            verbose: int = -1
+    ) -> None:
+        '''
+        Image Viewer Constructor
         -
-        Calls the service request each time the timer is reached.
+        Initializes an instance of the Image Viewer which streams the data
+        from an image in OpenCV.
+
+        Parameters
+        -
+        - topic : `str`
+            - Image topic to subscribe to. Must be in
+                `Topics.Camera.ALL_IMAGE_VIEWS`.
+        - verbose : `int`
+            - Defaults to `-1` which means no verbosity. Any value 0 or greater
+                represents the number of tabs to indent logs by.
+
+        Returns
+        -
+        None
+        '''
+
+        # validate the topic
+        # if not topic in Topics.Camera.ALL_IMAGE_VIEWS:
+        #     raise ValueError(
+        #         f'Image_Viewer unable to construct object with invalid topic' \
+        #             + f': topic = {repr(topic)}'
+        #     )
+        
+        # initialize node
+        super().__init__(
+            f'ROS2_ImageViewer_{topic.replace("/","__")}',
+            verbose
+        )
+        _t = '\t' * self._verbose
+        if self._V: print(f'{_t}Constructing Image Viewer - topic={topic}')
+
+        # create main attributes
+        if self._V: print(f'{_t}| - Creating Main Attributes')
+        self._data: Optional[MSG_CameraData] = None
+        self._topic = topic
+        self.state_changed = Signal()
+
+        # create subscribers
+        if self._V: print(f'{_t}| - Creating Subscribers')
+        if self._V: print(f'{_t}\t| - Image Stream')
+        self.create_sub(
+            msgCameraData,
+            self.topic,
+            self.sub_callback_stream
+        )
+
+        if self._V:
+            print(
+                f'{_t}| - Finished Created:\n{_t}\t' \
+                    + repr(self).replace('\n', f'\n\t{_t}')
+            )
+        else:
+            print(f'Created {self}')
+
+    # ===============
+    # Get Object Data
+    def _get_data(self, short: bool = False) -> _DATA:
+        return cast(
+            _DATA,
+            {
+                True: {
+                    'node_name': self._node_name,
+                    'topic': self.topic,
+                },
+                False: {
+                    'node_name': self._node_name,
+                    'topic': self.topic,
+                    'data': self._data
+                },
+            }[short]
+        )
+
+    # ==========
+    # Main Topic
+    @property
+    def topic(self) -> str:
+        ''' Base topic for getting the image from. '''
+        return f'/cameras/{self._topic}'
+    
+    # =======================
+    # Image Stream Subscriber
+    def sub_callback_stream(
+            self,
+            msg: msgCameraData
+    ) -> None:
+        '''
+        Image Stream Subscriber
+        -
+        Runs whenever data is published to the topic that this `Image_Viewer`
+        is subscribed to.
+
+        Parameters
+        -
+        - msg : `msgCameraData`
+            - Contains the data from the image passed through the topic.
+
+        Returns
+        -
+        None
+        '''
+
+        # update data
+        self._data = MSG_CameraData.from_msg(msg)
+        self._update_stream()
+
+    # ========================
+    # Updates the Video Stream
+    def _update_stream(self) -> None:
+        '''
+        Updates the Video Stream
+        -
+        Updates the OpenCV video stream from the image data saved.
 
         Parameters
         -
@@ -628,17 +784,35 @@ class Client_Camera(Node, ROS2_obj):
         None
         '''
 
-        # initialize verbosity loggers
-        V: bool = self._verbose >= 0
-        _t: str = '\t' * self._verbose
-        if V: print(f'{_t}Timer Callback')
+        # make sure data exists
+        if self._data is None:
+            raise RuntimeWarning(
+                f'Image_Viewer {self} tried to _update_stream with no valid' \
+                    + ' data.'
+            )
+        
+        # convert image array to numpy array
+        _i = numpy.array(self._data.image, dtype = numpy.uint8)
 
-        # Run Request/Response
-        if V: print(f'{_t}| - Getting Response')
-        res: srvCameraData.Response = self.send_request()
-        if V: print(f'{_t}\t| - Response: {res}')
+        # convert 1D to 3D
+        _i = _i.reshape(
+            self._data.height, 
+            self._data.width, 
+            self._data.channels
+        )
 
-        if V: print(f'{_t}| - Done')
+        # convert colour
+        if self._data.channels == 4:
+            _i = cv2.cvtColor(_i, cv2.COLOR_BGRA2BGR)
+        elif self._data.channels == 3:
+            pass # already bgr
+        elif self._data.channels == 1:
+            _i = cv2.cvtColor(_i, cv2.COLOR_GRAY2BGR)
+
+        # display image
+        cv2.imshow(self._node_name, _i)
+        if (cv2.waitKey(1) & 0xff) == 27: # 27 = Escape key ASCII code
+            raise ConnectionAbortedError
 
 
 # =============================================================================

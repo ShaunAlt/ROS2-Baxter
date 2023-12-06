@@ -304,9 +304,21 @@ class ROS2_Node(ROS2_obj, Node):
     - create_timer(timer_sec, callback_func) : `Timer`
         - Creates a timer which runs the callback function after each interval.
             Return value does not required storing.
+    - destroy_node() : `None`
+        - Destroys the current node.
     - get_logger() : `Logger`
         - Creates a logger which can be used for logging and debugging
             purposes.
+
+    `ROS2_obj` Methods
+    -
+    - _get_data(short = False) : `_DATA`
+        - Creates a list of data points to be printed out by the `__str__` and
+            `__repr__` instance methods.
+    - __str__() : `str`
+        - Creates a short stringified version of the current ROS2 object.
+    - __repr__() : `str`
+        - Creates a long, more descriptive version of the `__str__()` output.
     '''
 
     # ===========
@@ -320,10 +332,11 @@ class ROS2_Node(ROS2_obj, Node):
         self._verbose: int = _verbose
         self._V: bool = _verbose >= 0
         self._verbose_sub: int = {True: _verbose + 1, False: -1}[self._V]
+        super().__init__(self._node_name)
 
     # ================
     # Create Publisher
-    def create_publisher(
+    def create_pub(
             self,
             msg: '_MSG',
             topic: str,
@@ -361,7 +374,7 @@ class ROS2_Node(ROS2_obj, Node):
     
     # =================
     # Create Subscriber
-    def create_subscription(
+    def create_sub(
             self,
             msg: '_MSG',
             topic: str,
@@ -386,6 +399,11 @@ class ROS2_Node(ROS2_obj, Node):
             - Callback function to run when the subscriber gets data.
         - queue : `int`
             - TODO: Unclear what this is actually for, defaults to 10.
+
+        Returns
+        -
+        `Subscriber`
+            - ROS2 Subscriber for the specified topic.
         '''
 
         return super().create_subscription(
@@ -397,18 +415,75 @@ class ROS2_Node(ROS2_obj, Node):
     
     # ============
     # Create Timer
-    def create_timer(
+    def create_tim(
             self,
             timer_sec: float,
             callback_func: Callable[[], None]
     ) -> Timer:
         '''
-        
+        Create Timer
+        -
+        Creates a timer which runs the callback function after each interval.
+        Return value does not required storing.
+
+        Parameters
+        -
+        - timer_sec : `float`
+            - Decimal number of seconds to wait between each callback functio
+                call.
+        - callback_func : `Callable[[], None]`
+            - Callback function to run each time the timer is activated.
+
+        Returns
+        -
+        `Timer`
+            - ROS2 Timer.
         '''
 
         return super().create_timer(
             timer_sec,
             callback_func
+        )
+
+    # ============
+    # Destroy Node
+    def destroy_n(self) -> None:
+        '''
+        Destroy Node
+        -
+        Destroys the current node.
+
+        Parameters
+        -
+        None
+
+        Returns
+        -
+        None
+        '''
+
+        super().destroy_node()
+
+    # ==========
+    # Get Logger
+    def get_l(self) -> Logger:
+        '''
+        Get Logger
+        -
+        Creates a logger which can be used for logging and debugging purposes.
+
+        Parameters
+        -
+        None
+
+        Returns
+        -
+        None
+        '''
+
+        return cast(
+            Logger,
+            super().get_logger()
         )
 
 
@@ -457,14 +532,6 @@ _MSG = Union[
     msgHeader,
 ]
 _TIMER = Tuple[float, Callable[[Node], None]]
-class Services():
-    ''' Collection of all ROS2 Baxter Services. '''
-    class Camera():
-        ''' Camera Services. '''
-        IMAGE_DATA: str = 'image_data'
-        ALL: List[str] = [
-            IMAGE_DATA,
-        ]
 class Topics():
     ''' Collection of all ROS2 Baxter Topics. '''
     class Camera():
@@ -472,10 +539,26 @@ class Topics():
         HEAD: str = 'head_camera'
         LEFT: str = 'left_hand_camera'
         RIGHT: str = 'right_hand_camera'
+        IMAGE_DATA: str = 'image_data'
+        IMAGE_DATA_HEAD: str = f'{HEAD}/{IMAGE_DATA}'
+        IMAGE_DATA_LEFT: str = f'{LEFT}/{IMAGE_DATA}'
+        IMAGE_DATA_RIGHT: str = f'{RIGHT}/{IMAGE_DATA}'
+        PROCESS_DATA_TABLE: str = 'processed_table'
+        PROCESS_DATA_TABLE_HEAD: str = f'{HEAD}/{PROCESS_DATA_TABLE}'
+        PROCESS_DATA_TABLE_LEFT: str = f'{LEFT}/{PROCESS_DATA_TABLE}'
+        PROCESS_DATA_TABLE_RIGHT: str = f'{RIGHT}/{PROCESS_DATA_TABLE}'
         ALL: List[str] = [
             HEAD,
             LEFT,
             RIGHT,
+        ]
+        ALL_IMAGE_VIEWS: List[str] = [
+            IMAGE_DATA_HEAD,
+            IMAGE_DATA_LEFT,
+            IMAGE_DATA_RIGHT,
+            PROCESS_DATA_TABLE_HEAD,
+            PROCESS_DATA_TABLE_LEFT,
+            PROCESS_DATA_TABLE_RIGHT,
         ]
 
     class DigitalIO():
@@ -638,6 +721,8 @@ from .msgs import (
     Twist as MSG_Twist,
     Vector3 as MSG_Vector3,
     Wrench as MSG_Wrench,
+    # Custom messages
+    CameraData as MSG_CameraData,
 )
 from .srvs import (
     # baxter_core_msgs
@@ -649,7 +734,8 @@ from .srvs import (
 )
 from .camera import (
     Camera,
-    Client_Camera,
+    Image_Processor,
+    Image_Viewer,
 )
 from .digital_io import (
     DigitalIO,

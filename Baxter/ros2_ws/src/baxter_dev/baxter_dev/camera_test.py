@@ -47,20 +47,20 @@ if TYPE_CHECKING:
     from baxter_int_ros2.baxter_int_ros2 import (
         _TIMER,
         Camera,
-        Client_Camera,
+        Image_Processor,
+        Image_Viewer,
         MSG_Image,
         msgImage,
-        Services,
         Topics,
     )
 else:
     from baxter_int_ros2 import (
         _TIMER,
         Camera,
-        Client_Camera,
+        Image_Processor,
+        Image_Viewer,
         MSG_Image,
         msgImage,
-        Services,
         Topics,
     )
 
@@ -647,17 +647,17 @@ def test07_service_client_stream(
     # create clients
     if V: print(f'{_t}| - Creating Clients')
     clients = [
-        Client_Camera(
-            _topic,
-            Services.Camera.IMAGE_DATA,
-            verbose = _sub_v,
-            stream_video = True
-        )
-        for _topic in [
-            Topics.Camera.LEFT,
-            Topics.Camera.RIGHT,
-            # Topics.Camera.HEAD,
-        ]
+        # Client_Camera(
+        #     _topic,
+        #     Services.Camera.IMAGE_DATA,
+        #     verbose = _sub_v,
+        #     stream_video = True
+        # )
+        # for _topic in [
+        #     Topics.Camera.LEFT,
+        #     Topics.Camera.RIGHT,
+        #     # Topics.Camera.HEAD,
+        # ]
     ]
 
     # create overall nodes list
@@ -686,11 +686,259 @@ def test07_service_client_stream(
 
 
 # =============================================================================
+# Test 08 - Stream Image Data using Publish/Subscribe
+# =============================================================================
+def test08_stream_pub_sub(
+        verbose: int = -1
+) -> None:
+    '''
+    Test 08 - Stream Image Data using Publish/Subscribe
+    -
+    Connects with every `Camera` object on Baxter and continuously updates
+    OpenCV image output showing what the camera is showing.
+
+    Parameters
+    -
+    - verbose : `int`
+        - Defaults to `-1`, which means no verbosity. Any value 0 or greater
+            corresponds to verbosity with the specified number of tabs used for
+            indentation.
+
+    Returns
+    -
+    None
+    '''
+
+    # set verbosity
+    V: bool = verbose >= 0
+    _t: str = '\t' * verbose
+    _sub_v: int = {True: verbose + 1, False: -1}[V]
+    print(f'{_t}Camera Test 08 - Display Single Camera Data')
+
+    # initialize rclpy
+    print(f'{_t}| - Initialize RCLPY')
+    rclpy.init()
+
+    # create subscriber
+    print(f'{_t}| - Creating Nodes')
+    nodes = [
+        Camera(
+            Topics.Camera.HEAD,
+            verbose = _sub_v
+        ),
+        Camera(
+            Topics.Camera.LEFT,
+            verbose = _sub_v
+        ),
+        Camera(
+            Topics.Camera.RIGHT,
+            verbose = _sub_v
+        ),
+        Image_Viewer(
+            Topics.Camera.IMAGE_DATA_HEAD,
+            verbose = _sub_v
+        ),
+        Image_Viewer(
+            Topics.Camera.IMAGE_DATA_LEFT,
+            verbose = _sub_v
+        ),
+        Image_Viewer(
+            Topics.Camera.IMAGE_DATA_RIGHT,
+            verbose = _sub_v
+        ),
+    ]
+
+    # spin
+    print(f'{_t}| - Spinning')
+    executor = rclpy.executors.SingleThreadedExecutor()
+    for node in nodes:
+        executor.add_node(node)
+
+    try:
+        executor.spin()
+    except ConnectionAbortedError:
+        print(f'{_t}| - Image Connection Aborted')
+
+    # end
+    print(f'{_t}| - Destroying Nodes + Windows')
+    for node in nodes:
+        node.destroy_node()
+    cv2.destroyAllWindows()
+    print(f'{_t}| - Shutting Down')
+    rclpy.shutdown()
+    print(f'{_t}| - Done')
+
+
+# =============================================================================
+# Test 09 - Stream Image Data using Publishers with External Subscribers
+# =============================================================================
+def test09_stream_pub_sub(
+        verbose: int = -1
+) -> None:
+    '''
+    Test 09 - Stream Image Data using Publishers with External Subscribers
+    -
+    Connects with every `Camera` object on Baxter and continuously updates
+    OpenCV image topic. External subscribers can be attached to stream the
+    image data being published to these topics.
+
+    Parameters
+    -
+    - verbose : `int`
+        - Defaults to `-1`, which means no verbosity. Any value 0 or greater
+            corresponds to verbosity with the specified number of tabs used for
+            indentation.
+
+    Returns
+    -
+    None
+    '''
+
+    # set verbosity
+    V: bool = verbose >= 0
+    _t: str = '\t' * verbose
+    _sub_v: int = {True: verbose + 1, False: -1}[V]
+    print(f'{_t}Camera Test 09 - Display Stream Image Data with Publishers')
+
+    # initialize rclpy
+    print(f'{_t}| - Initialize RCLPY')
+    rclpy.init()
+
+    # create subscriber
+    print(f'{_t}| - Creating Nodes')
+    nodes = [
+        Camera(
+            Topics.Camera.HEAD,
+            verbose = _sub_v
+        ),
+        Camera(
+            Topics.Camera.LEFT,
+            verbose = _sub_v
+        ),
+        Camera(
+            Topics.Camera.RIGHT,
+            verbose = _sub_v
+        ),
+    ]
+
+    # spin
+    print(f'{_t}| - Spinning')
+    executor = rclpy.executors.SingleThreadedExecutor()
+    for node in nodes:
+        executor.add_node(node)
+
+    try:
+        executor.spin()
+    except ConnectionAbortedError:
+        print(f'{_t}| - Image Connection Aborted')
+
+    # end
+    print(f'{_t}| - Destroying Nodes + Windows')
+    for node in nodes:
+        node.destroy_node()
+    cv2.destroyAllWindows()
+    print(f'{_t}| - Shutting Down')
+    rclpy.shutdown()
+    print(f'{_t}| - Done')
+
+
+# =============================================================================
+# Test 10 - Stream Image + Process Table Corners
+# =============================================================================
+def test10_stream_pub_sub(
+        verbose: int = -1
+) -> None:
+    '''
+    Test 10 - Stream Image + Process Table Corners
+    -
+    Connects with each Baxter `Camera` and attempts to locate the corners of
+    the table visible in each camera.
+
+    Parameters
+    -
+    - verbose : `int`
+        - Defaults to `-1`, which means no verbosity. Any value 0 or greater
+            corresponds to verbosity with the specified number of tabs used for
+            indentation.
+
+    Returns
+    -
+    None
+    '''
+
+    # set verbosity
+    V: bool = verbose >= 0
+    _t: str = '\t' * verbose
+    _sub_v: int = {True: verbose + 1, False: -1}[V]
+    print(f'{_t}Camera Test 10 - Stream Image + Process Table Corners')
+
+    # initialize rclpy
+    print(f'{_t}| - Initialize RCLPY')
+    rclpy.init()
+
+    # create subscriber
+    print(f'{_t}| - Creating Nodes')
+    nodes = [
+        Camera(
+            Topics.Camera.HEAD,
+            verbose = _sub_v
+        ),
+        Camera(
+            Topics.Camera.LEFT,
+            verbose = _sub_v
+        ),
+        Camera(
+            Topics.Camera.RIGHT,
+            verbose = _sub_v
+        ),
+        Image_Processor(
+            Topics.Camera.HEAD,
+            process_table = True,
+            verbose = _sub_v
+        ),
+        Image_Processor(
+            Topics.Camera.LEFT,
+            process_table = True,
+            verbose = _sub_v
+        ),
+        Image_Processor(
+            Topics.Camera.RIGHT,
+            process_table = True,
+            verbose = _sub_v
+        ),
+    ]
+
+    # spin
+    print(f'{_t}| - Spinning')
+    executor = rclpy.executors.SingleThreadedExecutor()
+    for node in nodes:
+        executor.add_node(node)
+
+    try:
+        executor.spin()
+    except ConnectionAbortedError:
+        print(f'{_t}| - Image Connection Aborted')
+    except KeyboardInterrupt:
+        print(f'{_t}| - Keyboard Interrupt Occurred')
+    except Exception as e:
+        print(f'{_t}| - UNKNOWN ERROR: {e}')
+
+    # end
+    print(f'{_t}| - Destroying Nodes + Windows')
+    for node in nodes:
+        node.destroy_node()
+    cv2.destroyAllWindows()
+    print(f'{_t}| - Shutting Down')
+    rclpy.shutdown()
+    print(f'{_t}| - Done')
+
+
+# =============================================================================
 # Main Function
 # =============================================================================
 def main(args: None = None):
     test_num: int = 1
-    v: int = 0
+    v: int = -1
 
     if len(sys.argv) >= 2:
         test_num = int(sys.argv[1])
@@ -711,6 +959,12 @@ def main(args: None = None):
         test06_display_image_all_interface(v)
     elif test_num == 7:
         test07_service_client_stream(v)
+    elif test_num == 8:
+        test08_stream_pub_sub(v)
+    elif test_num == 9:
+        test09_stream_pub_sub(v)
+    elif test_num == 10:
+        test10_stream_pub_sub(v)
     else:
         raise ValueError(
             f'test_num (argument 1 value) invalid: test_num={repr(test_num)}'

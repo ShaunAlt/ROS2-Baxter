@@ -85,7 +85,7 @@ class MinimalClient(Node):
 # =============================================================================
 def main(args: None = None) -> None:
     rclpy.init(args = args)
-    minimal_subscriber = MinimalSubscriber()
+    minimal_subscriber = MinimalService()
     rclpy.spin(minimal_subscriber)
     minimal_subscriber.destroy_node()
     rclpy.shutdown()

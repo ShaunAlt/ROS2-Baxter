@@ -12,6 +12,9 @@
 # Created by: Shaun Altmann
 # =============================================================================
 
+# Source ROS2
+source /opt/ros/galactic/setup.bash
+
 # Source Workspace
 source install/setup.bash
 
