@@ -22,6 +22,9 @@ import argparse
 # used for multi-threading
 import threading
 
+# used for working out errors
+import traceback
+
 # used for image processing
 import cv2
 
@@ -922,6 +925,7 @@ def test10_stream_pub_sub(
         print(f'{_t}| - Keyboard Interrupt Occurred')
     except Exception as e:
         print(f'{_t}| - UNKNOWN ERROR: {e}')
+        traceback.print_exc()
 
     # end
     print(f'{_t}| - Destroying Nodes + Windows')

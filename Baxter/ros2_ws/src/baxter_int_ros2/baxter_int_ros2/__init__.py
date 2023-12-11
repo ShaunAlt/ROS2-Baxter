@@ -134,6 +134,13 @@ try:
 except ImportError:
     from _weakrefset import WeakSet
 
+if TYPE_CHECKING:
+    from cv2.typing import (
+        MatLike,
+    )
+else:
+    MatLike = Any
+
 
 # =============================================================================
 # Main ROS2 Interface Object
