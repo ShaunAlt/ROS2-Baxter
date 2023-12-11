@@ -52,7 +52,12 @@ VALS_S = [
     9, # 4
     11 # 5
 ]
-IMG_STR = 'imgs/Table-Img2.png'
+IMG_STRS = [
+    '',
+    'imgs/Table-Img1.png',
+    'imgs/Table-Img2.png',
+    'imgs/Table-Img3.png'
+]
 
 
 # =============================================================================
@@ -160,7 +165,7 @@ def order_points(pts: Any) -> Any:
 	rect[3] = pts[numpy.argmax(diff)]
 	# return the ordered coordinates
 	return rect
-def four_point_transform(image: Any, pts: Any) -> Any:
+def four_point_transform(image: MatLike, pts: Any) -> MatLike:
 	# obtain a consistent order of the points and unpack them
 	# individually
 	rect = order_points(pts)
@@ -191,7 +196,7 @@ def four_point_transform(image: Any, pts: Any) -> Any:
 	M = cv2.getPerspectiveTransform(rect, dst)
 	warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
 	# return the warped image
-	return warped
+	return warped # type: ignore
 
 
 # =============================================================================
@@ -235,10 +240,44 @@ def display_image_contours(
 
 
 # =============================================================================
+# Split Image to Rows and Cols
+# =============================================================================
+def split_img(
+        img: MatLike, 
+        rows: int, 
+        cols: int
+) -> Tuple[int, int, numpy.ndarray]:
+    ''' Split Image to Rows and Cols '''
+
+    # resize image (discard excess columns right and rows bottom)
+    if img.shape[0] % rows > 0:
+        img = img[0:(-1*(img.shape[0]%rows)), :]
+    if img.shape[1] % cols > 0:
+        img = img[:, 0:(-1*(img.shape[1]%cols))]
+
+    row_width: int = img.shape[0] // rows
+    col_width: int = img.shape[1] // cols
+
+    return (
+        row_width,
+        col_width,
+        numpy.array([
+            numpy.array([
+                img[
+                    r*row_width:((r+1)*row_width)-1, 
+                    c*col_width:((c+1)*col_width)-1
+                ]
+                for c in range(cols)
+            ])
+            for r in range(rows)
+        ])
+    )
+
+# =============================================================================
 # Display Image + Re-arranged Perspective
 # =============================================================================
 
-def display_image_document(img: MatLike) -> None:
+def display_image_document(img: MatLike) -> MatLike:
     # get canny edges
     img_canny: MatLike = blur(edge(blur(gray(img.copy()), 5), 10, 30), 7)
 
@@ -273,11 +312,87 @@ def display_image_document(img: MatLike) -> None:
 
     # create warped image
     img_warped = four_point_transform(img.copy(), doc_points)
-    print(f'Warped Image: {len(img_warped)} x {len(img_warped[0])} x {len(img_warped[0][0])}')
+    print(f'Warped Shape: {img_warped.shape}')
+
     cv2.imshow('Table', img_warped)
     while (cv2.waitKey(1) & 0xff) != 27:
         pass
     cv2.destroyAllWindows()
+
+    return img_warped
+
+
+
+# =============================================================================
+# Display Segmented + Occupancy Grid of Image
+# =============================================================================
+
+def display_image_segment(
+        img: MatLike,
+        blowup: int = 30,
+        rows: int = 10,
+        cols: int = 20
+) -> MatLike:
+    BLOWUP: int = blowup
+    ROWS: int = rows
+    COLS: int = cols
+    RGB: bool = len(img.shape) == 3
+
+    # split image
+    row_width, col_width, img_split = split_img(img, ROWS, COLS)
+    print(f'Split Shape: {img_split.shape}')
+
+    # get the average colour in each segment
+    _col: numpy.ndarray
+    _row: numpy.ndarray
+    c: int
+    r: int
+    # img_avg_split: numpy.ndarray = numpy.zeros_like(img_split)
+    occupancy_grid_uint8: numpy.ndarray = numpy.zeros((ROWS, COLS), numpy.uint8)
+    for r, _row in enumerate(img_split):
+        for c, _col in enumerate(_row):
+            occupancy_grid_uint8[r, c] = _col.sum() / (_col.shape[0] * _col.shape[1])
+    occupancy_grid_bool: numpy.ndarray = numpy.array([
+        [
+            int(_cell > 0)
+            for _cell in _row
+        ]
+        for _row in occupancy_grid_uint8
+    ])
+
+    img_occ_uint8 = numpy.zeros(
+        (
+            occupancy_grid_uint8.shape[0] * BLOWUP,
+            occupancy_grid_uint8.shape[1] * BLOWUP
+        ), 
+        numpy.uint8
+    )
+    for r, _row in enumerate(occupancy_grid_uint8):
+        for c, _cell in enumerate(_row):
+            for sub_cell_y in range(BLOWUP):
+                for sub_cell_x in range(BLOWUP):
+                    _x = (c*BLOWUP + sub_cell_x)
+                    _y = (r*BLOWUP + sub_cell_y)
+                    img_occ_uint8[_y, _x] = _cell
+    img_occ_bool = numpy.array(
+        [
+            [
+                int(int(_cell) > 0) * 255
+                for _cell in _row
+            ]
+            for _row in img_occ_uint8
+        ],
+        dtype = numpy.uint8
+    )
+
+    cv2.imshow('Original', img)
+    cv2.imshow('Occupancy - UINT8', img_occ_uint8)
+    cv2.imshow('Occupancy - BOOL', img_occ_bool)
+    while (cv2.waitKey(1) & 0xff) != 27:
+        pass
+    cv2.destroyAllWindows()
+
+    return occupancy_grid_uint8
 
 
 # =============================================================================

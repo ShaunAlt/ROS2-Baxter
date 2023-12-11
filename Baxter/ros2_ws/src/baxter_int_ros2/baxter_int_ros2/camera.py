@@ -392,6 +392,7 @@ class Image_Processor(ROS2_Node):
     def __init__(
             self,
             topic: str,
+            find_table: bool = False,
             process_table: bool = False,
             verbose: int = -1
     ) -> None:
@@ -406,10 +407,13 @@ class Image_Processor(ROS2_Node):
         - topic : `str`
             - Topic to subscribe the image processor to. Must be in
                 `Topics.Camera.ALL`.
-        - process_table : `bool`
+        - find_table : `bool`
             - Whether or not to process the image and identify where the table
                 is in the image, as well as drawing a box around it with points
                 at each corner and in the centre.
+        - process_table : `bool`
+            - Whether or not to process the data from the table image and
+                identify the objects within the table.
         - verbose : `int`
             - Defaults to `-1` which means no verbosity. Any value 0 or greater
 
@@ -436,14 +440,11 @@ class Image_Processor(ROS2_Node):
         # create main attributes
         if self._V: print(f'{_t}| - Creating Main Attributes')
         self._data: Optional[MSG_CameraData] = None
+        self._data_table: Optional[MSG_CameraData] = None
+        self._find_table: bool = find_table
         self._process_table: bool = process_table
-        self._topic = topic
-        self._table_pos: Optional[Tuple[
-            Tuple[int, int],
-            Tuple[int, int],
-            Tuple[int, int],
-            Tuple[int, int],
-        ]] = None
+        self._topic: str = topic
+        self._table_pos: Optional[numpy.ndarray] = None
         self.state_changed = Signal()
 
         # create subscribers
@@ -452,7 +453,13 @@ class Image_Processor(ROS2_Node):
         self.create_sub(
             msgCameraData,
             self.topic_sub,
-            self.sub_callback_process
+            self.sub_callback_org
+        )
+        if self._V: print(f'{_t}\t| - Table Processing')
+        self.create_sub(
+            msgCameraData,
+            self.topic_table,
+            self.sub_callback_table
         )
 
         # create publishers
@@ -462,25 +469,29 @@ class Image_Processor(ROS2_Node):
             msgCameraData,
             self.topic_table
         )
-        self._pub_table_gray = self.create_pub(
+        self._pub_org_gray = self.create_pub(
             msgCameraData,
-            f'{self.topic_table}/gray'
+            f'{self.topic}/gray'
         )
-        self._pub_table_blur = self.create_pub(
+        self._pub_org_blur = self.create_pub(
             msgCameraData,
-            f'{self.topic_table}/blur'
+            f'{self.topic}/blur'
         )
-        self._pub_table_edge = self.create_pub(
+        self._pub_org_edge = self.create_pub(
             msgCameraData,
-            f'{self.topic_table}/edge'
+            f'{self.topic}/edge'
+        )
+        self._pub_org_edge_blur = self.create_pub(
+            msgCameraData,
+            f'{self.topic}/edge_blur'
+        )
+        self._pub_org_contours = self.create_pub(
+            msgCameraData,
+            f'{self.topic}/contours'
         )
         self._pub_table_edge_blur = self.create_pub(
             msgCameraData,
             f'{self.topic_table}/edge_blur'
-        )
-        self._pub_table_contours = self.create_pub(
-            msgCameraData,
-            f'{self.topic_table}/contours'
         )
 
         if self._V:
@@ -532,7 +543,7 @@ class Image_Processor(ROS2_Node):
 
     # ==========================
     # Image Processor Subscriber
-    def sub_callback_process(
+    def sub_callback_org(
             self,
             msg: msgCameraData
     ) -> None:
@@ -554,14 +565,41 @@ class Image_Processor(ROS2_Node):
 
         # update data
         self._data = MSG_CameraData.from_msg(msg)
+        if self._find_table:
+            self.find_table()
+
+    # ========================================
+    # Image Processor Subscriber - Table Image
+    def sub_callback_table(
+            self,
+            msg: msgCameraData
+    ) -> None:
+        '''
+        Image Processor Subscriber - Table Image
+        -
+        Runs whenever data is published to the Table topic that this 
+        `Image_Processor` is subscribed to.
+
+        Parameters
+        -
+        - msg : `msgCameraData`
+            - Contains the data from the image passed through the topic.
+
+        Returns
+        -
+        None
+        '''
+
+        # update data
+        self._data_table = MSG_CameraData.from_msg(msg)
         if self._process_table:
             self.process_table()
 
-    # =================
-    # Process the Table
-    def process_table(self) -> None:
+    # ==============
+    # Find the Table
+    def find_table(self) -> None:
         '''
-        Process the Table
+        Find the Table
         -
         Process the image data and identify the table.
 
@@ -577,7 +615,7 @@ class Image_Processor(ROS2_Node):
         # make sure data exists
         if self._data is None:
             raise RuntimeWarning(
-                f'Image_Processor {self} tried to process_table with no' \
+                f'Image_Processor {self} tried to find_table with no' \
                     + ' valid data.'
             )
         
@@ -641,15 +679,10 @@ class Image_Processor(ROS2_Node):
 
             # set table position
             if len(doc_points) == 4:
-                self._table_pos = (
-                    (doc_points[0][0], doc_points[0][1]),
-                    (doc_points[1][0], doc_points[1][1]),
-                    (doc_points[2][0], doc_points[2][1]),
-                    (doc_points[3][0], doc_points[3][1]),
-                )
+                self._table_pos = doc_points
             
             # publish camera data
-            self._pub_table_gray.publish(
+            self._pub_org_gray.publish(
                 MSG_CameraData(
                     image = img_gray.flatten().tolist(), # type: ignore
                     width = self._data.width,
@@ -658,7 +691,7 @@ class Image_Processor(ROS2_Node):
                     skip_validation = True
                 ).create_msg()
             )
-            self._pub_table_blur.publish(
+            self._pub_org_blur.publish(
                 MSG_CameraData(
                     image = img_blur.flatten().tolist(), # type: ignore
                     width = self._data.width,
@@ -667,7 +700,7 @@ class Image_Processor(ROS2_Node):
                     skip_validation = True
                 ).create_msg()
             )
-            self._pub_table_edge.publish(
+            self._pub_org_edge.publish(
                 MSG_CameraData(
                     image = img_edge.flatten().tolist(), # type: ignore
                     width = self._data.width,
@@ -676,7 +709,7 @@ class Image_Processor(ROS2_Node):
                     skip_validation = True
                 ).create_msg()
             )
-            self._pub_table_edge_blur.publish(
+            self._pub_org_edge_blur.publish(
                 MSG_CameraData(
                     image = img_edge_blur.flatten().tolist(), # type: ignore
                     width = self._data.width,
@@ -685,7 +718,7 @@ class Image_Processor(ROS2_Node):
                     skip_validation = True
                 ).create_msg()
             )
-            self._pub_table_contours.publish(
+            self._pub_org_contours.publish(
                 MSG_CameraData(
                     image = img_contour.flatten().tolist(), # type: ignore
                     width = self._data.width,
@@ -700,7 +733,7 @@ class Image_Processor(ROS2_Node):
         if self._table_pos is not None:
             img_warped = Image_Processor.PyImageSearch.four_point_transform(
                 img.copy(),
-                numpy.array(self._table_pos)
+                self._table_pos
             )
         
         if img_warped is not None:
@@ -713,6 +746,54 @@ class Image_Processor(ROS2_Node):
                     skip_validation = True
                 ).create_msg()
             )
+
+    # =================
+    # Process the Table
+    def process_table(self) -> None:
+        '''
+        Process the Table
+        -
+        Process the table image and identify the objects on the table.
+
+        Parameters
+        -
+        None
+
+        Returns
+        -
+        None
+        '''
+
+        # make sure data exists
+        if self._data_table is None:
+            raise RuntimeWarning(
+                f'Image_Processor {self} tried to process_table with no' \
+                    + ' valid data.'
+            )
+        
+        # convert image array to numpy array
+        img = numpy.array(self._data_table.image, dtype = numpy.uint8)
+        img = img.reshape(
+            self._data_table.height,
+            self._data_table.width,
+            self._data_table.channels
+        )
+        # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+        img_gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
+        img_blur = cv2.GaussianBlur(img_gray.copy(), (5, 5), 0) # (5,5)
+        img_edge = cv2.Canny(img_blur.copy(), 10, 30) # (75, 200) (20, 75)
+        img_edge_blur = cv2.GaussianBlur(img_edge.copy(), (7, 7), 0)
+
+        self._pub_table_edge_blur.publish(
+            MSG_CameraData(
+                image = img_edge_blur.flatten().tolist(), # type: ignore
+                width = self._data_table.width,
+                height = self._data_table.height,
+                channels = 1,
+                skip_validation = True
+            ).create_msg()
+        )
 
     class PyImageSearch():
         ''' Object container for pyimagesearch.com Functions. '''
