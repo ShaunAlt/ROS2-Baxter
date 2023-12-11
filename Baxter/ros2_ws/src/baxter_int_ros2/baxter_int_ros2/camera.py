@@ -590,108 +590,119 @@ class Image_Processor(ROS2_Node):
         )
         img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
 
-        # get table position if require
+        # get table position if required
+        if self._table_pos is None:
+            # get edges
+            img_gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
+            img_blur = cv2.GaussianBlur(img_gray.copy(), (5, 5), 0) # (5,5)
+            img_edge = cv2.Canny(img_blur.copy(), 10, 30) # (75, 200) (20, 75)
+            img_edge_blur = cv2.GaussianBlur(img_edge.copy(), (7, 7), 0)
 
-        # get edges
-        img_gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
-        img_blur = cv2.GaussianBlur(img_gray.copy(), (5, 5), 0) # (5,5)
-        img_edge = cv2.Canny(img_blur.copy(), 10, 30) # (75, 200) (20, 75)
-        img_edge_blur = cv2.GaussianBlur(img_edge.copy(), (7, 7), 0)
+            # get contours
+            img_contour = img.copy()
+            contours = sorted(
+                cv2.findContours(
+                    img_edge_blur.copy(),
+                    cv2.RETR_LIST,
+                    cv2.CHAIN_APPROX_SIMPLE
+                )[0],
+                key = cv2.contourArea,
+                reverse = True
+            )[:5]
 
-        # get contours
-        img_contour = img.copy()
-        contours = sorted(
-            cv2.findContours(
-                img_edge_blur.copy(),
-                cv2.RETR_LIST,
-                cv2.CHAIN_APPROX_SIMPLE
-            )[0],
-            key = cv2.contourArea,
-            reverse = True
-        )[:5]
-
-        # find main contour
-        doc_contour: MatLike = [] # type: ignore
-        doc_points = numpy.array([(0, 0) for _ in range(4)], dtype='float32')
-        for i, _c in enumerate(contours):
-            approx = cv2.approxPolyDP(
-                _c, 
-                0.02 * cv2.arcLength(_c, True), 
-                True
-            )
-            for _p in approx:
-                cv2.circle(
-                    img_contour,
-                    tuple(_p[0]),
-                    3,
-                    {
-                        (True, True): (255, 0, 0),
-                        (False, True): (0, 255, 0),
-                        (False, False): (255, 255, 0),
-                    }[(i<=0, i<=1)],
-                    4
+            # find main contour
+            doc_contour: MatLike = [] # type: ignore
+            doc_points = numpy.array([(0, 0) for _ in range(4)], dtype='float32')
+            for i, _c in enumerate(contours):
+                approx = cv2.approxPolyDP(
+                    _c, 
+                    0.02 * cv2.arcLength(_c, True), 
+                    True
                 )
-            if len(approx) == 4:
-                doc_contour = approx
-                break
-        for i, _c in enumerate(doc_contour):
-            _p = tuple(_c[0])
-            cv2.circle(img_contour, _p, 6, (0, 0, 255), 8)
-            doc_points[i] = _p
+                for _p in approx:
+                    cv2.circle(
+                        img_contour,
+                        tuple(_p[0]),
+                        3,
+                        {
+                            (True, True): (255, 0, 0),
+                            (False, True): (0, 255, 0),
+                            (False, False): (255, 255, 0),
+                        }[(i<=0, i<=1)],
+                        4
+                    )
+                if len(approx) == 4:
+                    doc_contour = approx
+                    break
+            for i, _c in enumerate(doc_contour):
+                _p = tuple(_c[0])
+                cv2.circle(img_contour, _p, 6, (0, 0, 255), 8)
+                doc_points[i] = _p
+
+            # set table position
+            if len(doc_points) == 4:
+                self._table_pos = (
+                    (doc_points[0][0], doc_points[0][1]),
+                    (doc_points[1][0], doc_points[1][1]),
+                    (doc_points[2][0], doc_points[2][1]),
+                    (doc_points[3][0], doc_points[3][1]),
+                )
+            
+            # publish camera data
+            self._pub_table_gray.publish(
+                MSG_CameraData(
+                    image = img_gray.flatten().tolist(), # type: ignore
+                    width = self._data.width,
+                    height = self._data.height,
+                    channels = 1,
+                    skip_validation = True
+                ).create_msg()
+            )
+            self._pub_table_blur.publish(
+                MSG_CameraData(
+                    image = img_blur.flatten().tolist(), # type: ignore
+                    width = self._data.width,
+                    height = self._data.height,
+                    channels = 1,
+                    skip_validation = True
+                ).create_msg()
+            )
+            self._pub_table_edge.publish(
+                MSG_CameraData(
+                    image = img_edge.flatten().tolist(), # type: ignore
+                    width = self._data.width,
+                    height = self._data.height,
+                    channels = 1,
+                    skip_validation = True
+                ).create_msg()
+            )
+            self._pub_table_edge_blur.publish(
+                MSG_CameraData(
+                    image = img_edge_blur.flatten().tolist(), # type: ignore
+                    width = self._data.width,
+                    height = self._data.height,
+                    channels = 1,
+                    skip_validation = True
+                ).create_msg()
+            )
+            self._pub_table_contours.publish(
+                MSG_CameraData(
+                    image = img_contour.flatten().tolist(), # type: ignore
+                    width = self._data.width,
+                    height = self._data.height,
+                    channels = 3,
+                    skip_validation = True
+                ).create_msg()
+            )
 
         # create warped image
         img_warped: Union[None, MatLike] = None
-        if len(doc_contour) == 4:
+        if self._table_pos is not None:
             img_warped = Image_Processor.PyImageSearch.four_point_transform(
                 img.copy(),
-                doc_points
+                numpy.array(self._table_pos)
             )
         
-        self._pub_table_gray.publish(
-            MSG_CameraData(
-                image = img_gray.flatten().tolist(), # type: ignore
-                width = self._data.width,
-                height = self._data.height,
-                channels = 1,
-                skip_validation = True
-            ).create_msg()
-        )
-        self._pub_table_blur.publish(
-            MSG_CameraData(
-                image = img_blur.flatten().tolist(), # type: ignore
-                width = self._data.width,
-                height = self._data.height,
-                channels = 1,
-                skip_validation = True
-            ).create_msg()
-        )
-        self._pub_table_edge.publish(
-            MSG_CameraData(
-                image = img_edge.flatten().tolist(), # type: ignore
-                width = self._data.width,
-                height = self._data.height,
-                channels = 1,
-                skip_validation = True
-            ).create_msg()
-        )
-        self._pub_table_edge_blur.publish(
-            MSG_CameraData(
-                image = img_edge_blur.flatten().tolist(), # type: ignore
-                width = self._data.width,
-                height = self._data.height,
-                channels = 1,
-                skip_validation = True
-            ).create_msg()
-        )
-        self._pub_table_contours.publish(
-            MSG_CameraData(
-                image = img_contour.flatten().tolist(), # type: ignore
-                width = self._data.width,
-                height = self._data.height,
-                channels = 3,
-                skip_validation = True
-            ).create_msg()
-        )
         if img_warped is not None:
             self._pub_table.publish(
                 MSG_CameraData(
