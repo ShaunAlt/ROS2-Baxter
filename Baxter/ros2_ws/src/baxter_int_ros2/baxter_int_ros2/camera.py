@@ -394,6 +394,7 @@ class Image_Processor(ROS2_Node):
             topic: str,
             find_table: bool = False,
             process_table: bool = False,
+            table_occu: bool = False,
             verbose: int = -1
     ) -> None:
         '''
@@ -431,7 +432,7 @@ class Image_Processor(ROS2_Node):
         
         # initialize node
         super().__init__(
-            f'ROS2_ImageProcessor_{topic.replace("/","__")}',
+            f'ROS2_ImageProcessor_{topic}',
             verbose
         )
         _t = '\t' * self._verbose
@@ -443,6 +444,7 @@ class Image_Processor(ROS2_Node):
         self._data_table: Optional[MSG_CameraData] = None
         self._find_table: bool = find_table
         self._process_table: bool = process_table
+        self._table_occu: bool = table_occu
         self._topic: str = topic
         self._table_pos: Optional[numpy.ndarray] = None
         self.state_changed = Signal()
@@ -492,6 +494,14 @@ class Image_Processor(ROS2_Node):
         self._pub_table_edge_blur = self.create_pub(
             msgCameraData,
             f'{self.topic_table}/edge_blur'
+        )
+        self._pub_table_occ_uint8 = self.create_pub(
+            msgCameraData,
+            f'{self.topic_table}/occupancy/uint8'
+        )
+        self._pub_table_occ_bool = self.create_pub(
+            msgCameraData,
+            f'{self.topic_table}/occupancy/bool'
         )
 
         if self._V:
@@ -778,13 +788,14 @@ class Image_Processor(ROS2_Node):
             self._data_table.width,
             self._data_table.channels
         )
-        # img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
+        # create edge-blur of table data
         img_gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
         img_blur = cv2.GaussianBlur(img_gray.copy(), (5, 5), 0) # (5,5)
         img_edge = cv2.Canny(img_blur.copy(), 10, 30) # (75, 200) (20, 75)
         img_edge_blur = cv2.GaussianBlur(img_edge.copy(), (7, 7), 0)
 
+        # publish table edge data
         self._pub_table_edge_blur.publish(
             MSG_CameraData(
                 image = img_edge_blur.flatten().tolist(), # type: ignore
@@ -793,6 +804,213 @@ class Image_Processor(ROS2_Node):
                 channels = 1,
                 skip_validation = True
             ).create_msg()
+        )
+
+        # create and publish occupancy grid if required
+        if self._table_occu:
+            _, occ_img_uint8 = Image_Processor.create_occupancy(
+                img_edge_blur,
+                30,
+                40,
+                10
+            )
+            _, occ_img_bool = Image_Processor.create_occupancy(
+                img_edge_blur,
+                30,
+                40,
+                10,
+                flag_uint8 = False
+            )
+            self._pub_table_occ_uint8.publish(
+                MSG_CameraData(
+                    image = occ_img_uint8.flatten().tolist(), # type: ignore
+                    width = occ_img_uint8.shape[1],
+                    height = occ_img_uint8.shape[0],
+                    channels = 1,
+                    skip_validation = True
+                ).create_msg()
+            )
+            self._pub_table_occ_bool.publish(
+                MSG_CameraData(
+                    image = occ_img_bool.flatten().tolist(), # type: ignore
+                    width = occ_img_bool.shape[1],
+                    height = occ_img_bool.shape[0],
+                    channels = 1,
+                    skip_validation = True
+                ).create_msg()
+            )
+
+    # =====================
+    # Create Occupancy Grid
+    @staticmethod
+    def create_occupancy(
+            img: numpy.ndarray,
+            rows: int,
+            cols: int,
+            img_blowup: int = 10,
+            flag_uint8: bool = True,
+            src: str = 'canny'
+    ) -> Tuple[numpy.ndarray, numpy.ndarray]:
+        '''
+        Create Occupancy Grid
+        -
+        Creates an occupancy grid of the image, with the specified number of
+        rows and columns. Can return either a graded or binary grid.
+
+        Parameters
+        -
+        - img : `numpy.ndarray`
+            - Image to create the occupancy grid from.
+        - rows : `int`
+            - Number of rows to split the image into for the grid.
+        - cols : `int`
+            - Number of cols to split the image into for the grid.
+        - img_blowup : `int`
+            - Scalar number of how much to increase the size of the occupancy
+                grid for use in viewing on camera.
+        - flag_uint8 : `bool`
+            - Whether to output a UINT8 or BOOL occupancy grid. Defaults to
+                True which means UINT8.
+        - src : `str`
+            - Image type source. Defaults to `'canny'`, which means the
+                image is the output of a canny edge filter.
+            - Options:
+                - 'canny' : Canny edge filter.
+
+        Returns
+        -
+        `Tuple[numpy.ndarray, numpy.ndarray]`
+            - [0]: Occupancy grid.
+            - [1]: Image viewable grid (blown up version of occupancy grid
+                which has been converted to image-streaming friendly data).
+        '''
+
+        # initialize variables
+        _c: int # column number counter
+        _c2: int # column number counter 2
+        _r: int # row number counter
+        _r2: int # row number counter 2
+        col_width: int # number of cols per sub-matrix in split image
+        img_split: numpy.ndarray # split image
+        occ_grid: numpy.ndarray # occupancy grid
+        occ_img: numpy.ndarray # occupancy grid image
+        row_width: int # number of rows per sub-matrix in split image
+        rgb: bool = len(img.shape) == 3 and img.shape[2] == 3
+
+        # get split image
+        (
+            row_width, 
+            col_width, 
+            img_split
+        ) = Image_Processor.split_img(
+            img,
+            rows,
+            cols
+        )
+
+        # initialize occupancy grid + image
+        occ_grid = numpy.zeros((rows, cols), numpy.uint8)
+        occ_img = numpy.zeros((rows*img_blowup, cols*img_blowup), numpy.uint8)
+
+        # create occupancy grid data
+        if src == 'canny':
+            for _r in range(rows):
+                for _c in range(cols):
+                    if flag_uint8:
+                        if rgb:
+                            occ_grid[_r, _c] = (
+                                (img_split[_r, _c].sum()) \
+                                / (col_width * row_width * 3) # 3 channels
+                            )
+                        occ_grid[_r, _c] = (
+                            (img_split[_r, _c].sum()) \
+                            / (col_width * row_width) # single channel
+                        )
+                    else:
+                        occ_grid[_r, _c] = int(img_split[_r, _c].sum() > 0)
+        else:
+            raise ValueError(
+                f'Image_Processor.create_occupancy invalid src = {src}'
+            )
+        
+        # create occupancy image
+        if flag_uint8:
+            for _r in range(rows):
+                for _c in range(cols):
+                    for _r2 in range(img_blowup):
+                        for _c2 in range(img_blowup):
+                            occ_img[
+                                (_r*img_blowup + _r2), 
+                                (_c*img_blowup + _c2)
+                            ] = occ_grid[_r, _c]
+        else:
+            for _r in range(rows):
+                for _c in range(cols):
+                    for _r2 in range(img_blowup):
+                        for _c2 in range(img_blowup):
+                            occ_img[
+                                (_r*img_blowup + _r2), 
+                                (_c*img_blowup + _c2)
+                            ] = occ_grid[_r, _c] * 255 # (0 or 1) * 255
+
+        return (occ_grid, occ_img)
+
+    # ===========
+    # Split Image
+    @staticmethod
+    def split_img(
+        img: numpy.ndarray,
+        rows: int,
+        cols: int
+    ) -> Tuple[int, int, numpy.ndarray]:
+        '''
+        Split Image
+        -
+        Splits a parsed image into a segmented version of the original. Adds 2
+        dimensions (2D array where each cell in the 2D array contains a
+        sub-matrix of the original). Also truncates any excess rows and cols on
+        the right/bottom of the image so that the image is the correct size.
+
+        Parameters
+        -
+        - img : `numpy.ndarray`
+            - Image being split.
+        - rows : `int`
+            - Number of rows to split the image into.
+        - cols : `int`
+            - Number of columns to split the image into.
+
+        Returns
+        -
+        `Tuple[int, int, numpy.ndarray]`
+            - [0]: Number of rows per sub-matrix.
+            - [1]: Number of cols per sub-matrix.
+            - [2]: Split Image.
+        '''
+
+        # truncate excess rows/cols
+        if img.shape[0] % rows > 0:
+            img = img[0:(-1*(img.shape[0]%rows)), :]
+        if img.shape[1] % cols > 0:
+            img = img[:, 0:(-1*(img.shape[1]%cols))]
+
+        # calculate row and col widths
+        row_width: int = img.shape[0] // rows
+        col_width: int = img.shape[1] // cols
+
+        return (
+            row_width,
+            col_width,
+            numpy.array([
+                numpy.array([
+                    img[
+                        (r*row_width):(((r+1)*row_width)-1),
+                        (c*col_width):(((c+1)*col_width)-1)
+                    ]
+                    for c in range(cols)
+                ])
+                for r in range(rows)
+            ])
         )
 
     class PyImageSearch():
@@ -1023,6 +1241,9 @@ class Image_Viewer(ROS2_Node):
         -
         None
         '''
+
+        _t: str = '\t' * self._verbose_sub
+        if self._V: print(f'{_t}| - {self.topic} Update Stream')
 
         # make sure data exists
         if self._data is None:

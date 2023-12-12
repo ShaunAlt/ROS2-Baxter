@@ -335,7 +335,7 @@ class ROS2_Node(ROS2_obj, Node):
             _node_name: str,
             _verbose: int = -1
     ) -> None:
-        self._node_name: str = _node_name
+        self._node_name: str = _node_name.replace('/', '__')
         self._verbose: int = _verbose
         self._V: bool = _verbose >= 0
         self._verbose_sub: int = {True: _verbose + 1, False: -1}[self._V]

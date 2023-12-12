@@ -898,18 +898,21 @@ def test10_stream_pub_sub(
             Topics.Camera.HEAD,
             find_table = True,
             process_table = True,
+            table_occu = True,
             verbose = _sub_v
         ),
         Image_Processor(
             Topics.Camera.LEFT,
             find_table = True,
             process_table = True,
+            table_occu = True,
             verbose = _sub_v
         ),
         Image_Processor(
             Topics.Camera.RIGHT,
             find_table = True,
             process_table = True,
+            table_occu = True,
             verbose = _sub_v
         ),
     ]
