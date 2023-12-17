@@ -45,6 +45,15 @@ from logging import (
     Logger,
 )
 
+# used for JSON encoding
+from json import JSONEncoder
+
+# used for error tracebacks
+import traceback
+
+# used for time
+import time
+
 # used for validating methods
 from inspect import (
     ismethod,
@@ -341,6 +350,13 @@ class ROS2_Node(ROS2_obj, Node):
         self._verbose_sub: int = {True: _verbose + 1, False: -1}[self._V]
         super().__init__(self._node_name)
 
+    # =========
+    # Node Name
+    @property
+    def node_name(self) -> str:
+        ''' Node Name. '''
+        return self._node_name
+
     # ================
     # Create Publisher
     def create_pub(
@@ -539,6 +555,19 @@ _MSG = Union[
     msgHeader,
 ]
 _TIMER = Tuple[float, Callable[[Node], None]]
+class Settings():
+    CHECK_VERSION = True
+    HEAD_PAN_ANGLE_TOLERANCE: float = 0.1396263401
+    JOINT_ANGLE_TOLERANCE: float = 0.008726646
+    SDK_VERSION = '1.2.0'
+    # Version Compatibility Maps - {current: compatible}
+    VERSIONS_SDK2ROBOT = {'1.2.0': ['1.2.0']}
+    VERSIONS_SDK2GRIPPER = {
+        '1.2.0': {
+            'warn': '2014/5/20 00:00:00',  # Version 1.0.0
+            'fail': '2013/10/15 00:00:00', # Version 0.6.2
+        },
+    }
 class Topics():
     ''' Collection of all ROS2 Baxter Topics. '''
     class Camera():
@@ -687,6 +716,24 @@ class Topics():
             TORSO_UI_OUTPUT3,
         ]
 
+    class Gripper():
+        ''' Gripper Topics. '''
+        LEFT: str = 'left'
+        RIGHT: str = 'right'
+        ALL: List[str] = [
+            LEFT,
+            RIGHT,
+        ]
+
+        class SubTopics():
+            ''' Gripper Sub-Topics. '''
+            GET_PROPS: str = 'properties'
+            GET_STATE: str = 'state'
+            PREFIX: str = 'robot/end_effector'
+            SET_CMD: str = 'command'
+            SET_PROPS: str = 'rsdk/set_properties'
+            SET_STATE: str = 'rsdk/set_state'
+            SUFFIX: str = '_gripper'
 
 # =============================================================================
 # Sub-Module Imports
@@ -746,6 +793,9 @@ from .camera import (
 )
 from .digital_io import (
     DigitalIO,
+)
+from .gripper import (
+    Gripper,
 )
 
 # =============================================================================

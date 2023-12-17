@@ -21,7 +21,9 @@ from . import (
     Any,
     cast,
     List,
+    Optional,
     Tuple,
+    Union,
 
     # - array
     array,
@@ -200,7 +202,11 @@ class ROS2_msg(ROS2_obj):
             data: Any,
             _type: str,
             nullable: bool = False,
-            options: List[Any] = []
+            options: List[Any] = [],
+            data_range: Optional[Tuple[
+                Union[int, float], 
+                Union[int, float]
+            ]] = None
     ) -> str:
         '''
         Validate Input
@@ -221,6 +227,10 @@ class ROS2_msg(ROS2_obj):
             - Defaults to an empty list, which means no set list of values that
                 must be selected from. If list isn't empty, then the data value
                 must be one of the options in the list.
+        - range : `Tuple[int|float, int|float] | None`
+            - Defaults to `None`, which means no range of values will be
+                checked. If contains 2 values, then the `data` must be within
+                the 2 values (inclusive).
 
         Returns
         -
@@ -246,6 +256,18 @@ class ROS2_msg(ROS2_obj):
         if (len(options) > 0) and (data not in options):
             return (
                 f'Invalid data: data = {data} not in options = {options}'
+            )
+        
+        # validate data is in range (if required)
+        if (
+                (data_range is not None)
+                and (
+                    (data < data_range[0])
+                    or (data > data_range[1])
+                )
+        ):
+            return (
+                f'Invalid data: data = {data} not in range = {data_range}'
             )
 
         # validate datatype
@@ -755,6 +777,14 @@ class Time(ROS2_msg, msgTime):
             sec = msg.sec,
             nanosec = msg.nanosec
         )
+    
+    # ==============
+    # Create Message
+    def create_msg(self) -> _MSG:
+        _msg = msgTime()
+        _msg.sec = self.sec
+        _msg.nanosec = self.nanosec
+        return _msg
 
 # =====
 # Twist
@@ -1566,39 +1596,213 @@ class DigitalOutputCommand(ROS2_msg, msgDigitalOutputCommand):
 
 # ==================
 # EndEffectorCommand
-class EndEffectorCommand():
+class EndEffectorCommand(ROS2_msg, msgEndEffectorCommand):
     '''
-    baxter_core_msgs - AnalogIOState
+    baxter_core_msgs - EndEffectorCommand
+    -
+    Command to be sent to the end-effector on Baxter.
+
+    Data
+    -
+    - id : `uint32`
+        - Target end effector id.
+    - command : `string`
+        - Operation to perform.
+    - args : `string`
+        - JSON arguments to the command.
+    - sender : `string`
+        - OPTIONAL.
+        - Returned in state when command is handled.
+    - sequence : `uint32`
+        - OPTIONAL.
+        - Returned in state when command is handled.
+
+    Constants
+    -
+    - CMD_NO_OP : `string`
+    - CMD_SET : `string`
+    - CMD_CONFIGURE : `string`
+    - CMD_REBOOT : `string`
+    - CMD_RESET : `string`
+    - CMD_CALIBRATE : `string`
+    - CMD_CLEAR_CALIBRATION : `string`
+    - CMD_PREPARE_TO_GRIP : `string`
+    - CMD_GRIP : `string`
+    - CMD_RELEASE : `string`
+    - CMD_GO : `string`
+    - CMD_STOP : `string`
     '''
-    def __init__(self) -> None:
-        raise NotImplementedError()
+
+    # =========
+    # Constants
+    CMD_NO_OP: str = 'no_op'
+    CMD_SET: str = 'set'
+    CMD_CONFIGURE: str = 'configure'
+    CMD_REBOOT: str = 'reboot'
+    CMD_RESET: str = 'reset'
+    CMD_CALIBRATE: str = 'calibrate'
+    CMD_CLEAR_CALIBRATION: str = 'clear_calibration'
+    CMD_PREPARE_TO_GRIP: str = 'prepare_to_grip'
+    CMD_GRIP: str = 'grip'
+    CMD_RELEASE: str = 'release'
+    CMD_GO: str = 'go'
+    CMD_STOP: str = 'stop'
+    CMDS: List[str] = [
+        CMD_NO_OP,
+        CMD_SET,
+        CMD_CONFIGURE,
+        CMD_REBOOT,
+        CMD_RESET,
+        CMD_CALIBRATE,
+        CMD_CLEAR_CALIBRATION,
+        CMD_PREPARE_TO_GRIP,
+        CMD_GRIP,
+        CMD_RELEASE,
+        CMD_GO,
+        CMD_STOP,
+    ]
+
+    # ===========
+    # Constructor
+    def __init__(
+            self,
+            id: int,
+            command: str,
+            args: str,
+            sender: Optional[str] = None,
+            sequence: Optional[int] = None,
+            skip_validation: bool = False
+    ) -> None:
+        # validate data
+        if not skip_validation:
+            for _str in (
+                    [
+                        self._validate_input(
+                            id,
+                            self.TYPE_UINT32
+                        ),
+                        self._validate_input(
+                            command,
+                            self.TYPE_STRING,
+                            options = self.CMDS
+                        ),
+                        self._validate_input(
+                            args,
+                            self.TYPE_STRING
+                        ),
+                        self._validate_input(
+                            sender,
+                            self.TYPE_STRING,
+                            nullable = True
+                        ),
+                        self._validate_input(
+                            sequence,
+                            self.TYPE_STRING,
+                            nullable = True
+                        )
+                    ]
+            ):
+                if _str != '':
+                    raise ValueError(
+                        f'ROS2-MSG EndEffectorCommand Construct: {_str}'
+                    )
+                
+        # construct instance
+        super().__init__()
+        self.id = id
+        self.command = command
+        self.args = args
+        self.sender = sender
+        self.sequence = sequence
+
+    # ===============
+    # Get Object Data
+    def _get_data(self, short: bool = False) -> _DATA:
+        return {
+            True: {
+                'id': self.id,
+                'command': self.command,
+            },
+            False: {
+                'id': self.id,
+                'command': self.command,
+                'args': self.args,
+                'sender': self.sender,
+                'sequence': self.sequence,
+            }
+        }[short]
+    
+    # ===============
+    # Create from MSG
+    @staticmethod
+    def from_msg(msg: msgEndEffectorCommand) -> 'EndEffectorCommand':
+        return EndEffectorCommand(
+            id = msg.id,
+            command = msg.command,
+            args = msg.args,
+            sender = msg.sender,
+            sequence = msg.sequence,
+            skip_validation = True
+        )
+    
+    # ==============
+    # Create Message
+    def create_msg(self) -> msgEndEffectorCommand:
+        _msg = msgEndEffectorCommand()
+        _msg.id = self.id
+        _msg.command = self.command
+        _msg.args = self.args
+        _msg.sender = self.sender
+        _msg.sequence = self.sequence
+        return _msg
 
 # =====================
 # EndEffectorProperties
-class EndEffectorProperties():
+class EndEffectorProperties(ROS2_msg, msgEndEffectorProperties):
     '''
     baxter_core_msgs - EndEffectorProperties
     -
 
     Data
     -
-    - id : `int`
-    - ui_type : `int`
-    - manufacturer : `str`
-    - product : `str`
-    - serial_number : `str`
-    - hardware_rev : `str`
-    - firmware_rev : `str`
-    - firmware_date : `str`
+    - id : `uint32`
+        - ID of the end effector.
+    - ui_type : `uint8`
+        - Type of end effector.
+    - manufacturer : `string`
+        - Manufacturer name.
+    - product : `string`
+        - Product name.
+    - serial_number : `string`
+        - OPTIONAL.
+        - Serial number.
+    - hardware_rev : `string`
+        - OPTIONAL.
+        - Hardware revision.
+    - firmware_rev : `string`
+        - OPTIONAL.
+        - Firmware revision.
+    - firmware_date : `string`
+        - OPTIONAL.
+        - Firmware date.
     - has_calibration : `bool`
+        - True if the gripper has calibration.
     - controls_grip : `bool`
+        - True if the gripper has grip/release control.
     - senses_grip : `bool`
+        - True if the gripper has grip sense.
     - reverses_grip : `bool`
+        - True if the gripper has reverse-grip mode.
     - controls_force : `bool`
+        - True if the gripper has force control.
     - senses_force : `bool`
+        - True if the gripper has force sense.
     - controls_position : `bool`
+        - True if the gripper has position control.
     - senses_position : `bool`
-    - properties : `str`
+        - True if the gripper has position sense.
+    - properties : `string`
+        - Other properties in JSON format.
 
     Constants
     -
@@ -1607,46 +1811,505 @@ class EndEffectorProperties():
     - ELECTRIC_GRIPPER : `int`
     - PASSIVE_GRIPPER : `int`
     '''
-    def __init__(self) -> None:
-        raise NotImplementedError()
+
+    # =========
+    # Constants
+    NO_GRIPPER: int = 0
+    SUCTION_CUP_GRIPPER: int = 1
+    ELECTRIC_GRIPPER: int = 2
+    PASSIVE_GRIPPER: int = 3
+    GRIPPERS: List[int] = [
+        NO_GRIPPER,
+        SUCTION_CUP_GRIPPER,
+        ELECTRIC_GRIPPER,
+        PASSIVE_GRIPPER,
+    ]
+
+    # ===========
+    # Constructor
+    def __init__(
+            self,
+            id: int,
+            ui_type: int,
+            manufacturer: str,
+            product: str,
+            has_calibration: bool,
+            controls_grip: bool,
+            senses_grip: bool,
+            reverses_grip: bool,
+            controls_force: bool,
+            senses_force: bool,
+            controls_position: bool,
+            senses_position: bool,
+            properties: str,
+            serial_number: Optional[str] = None,
+            hardware_rev: Optional[str] = None,
+            firmware_rev: Optional[str] = None,
+            firmware_date: Optional[str] = None,
+            skip_validation: bool = False
+    ) -> None:
+        # validate data
+        if not skip_validation:
+            for _str in (
+                    [
+                        self._validate_input(
+                            id,
+                            self.TYPE_UINT32
+                        ),
+                        self._validate_input(
+                            ui_type,
+                            self.TYPE_UINT8,
+                            options = self.GRIPPERS
+                        ),
+                        self._validate_input(
+                            manufacturer,
+                            self.TYPE_STRING
+                        ),
+                        self._validate_input(
+                            product,
+                            self.TYPE_STRING
+                        ),
+                        self._validate_input(
+                            serial_number,
+                            self.TYPE_STRING,
+                            nullable = True
+                        ),
+                        self._validate_input(
+                            hardware_rev,
+                            self.TYPE_STRING,
+                            nullable = True
+                        ),
+                        self._validate_input(
+                            firmware_rev,
+                            self.TYPE_STRING,
+                            nullable = True
+                        ),
+                        self._validate_input(
+                            firmware_date,
+                            self.TYPE_STRING,
+                            nullable = True
+                        ),
+                        self._validate_input(
+                            has_calibration,
+                            self.TYPE_BOOL
+                        ),
+                        self._validate_input(
+                            controls_grip,
+                            self.TYPE_BOOL
+                        ),
+                        self._validate_input(
+                            senses_grip,
+                            self.TYPE_BOOL
+                        ),
+                        self._validate_input(
+                            reverses_grip,
+                            self.TYPE_BOOL
+                        ),
+                        self._validate_input(
+                            controls_force,
+                            self.TYPE_BOOL
+                        ),
+                        self._validate_input(
+                            senses_force,
+                            self.TYPE_BOOL
+                        ),
+                        self._validate_input(
+                            controls_position,
+                            self.TYPE_BOOL
+                        ),
+                        self._validate_input(
+                            senses_position,
+                            self.TYPE_BOOL
+                        ),
+                        self._validate_input(
+                            properties,
+                            self.TYPE_STRING
+                        ),
+                    ]
+            ):
+                if _str != '':
+                    raise ValueError(
+                        f'ROS2-MSG EndEffectorProperties Construct: {_str}'
+                    )
+                
+        # construct instance
+        super().__init__()
+        self.id = id
+        self.ui_type = ui_type
+        self.manufacturer = manufacturer
+        self.product = product
+        self.serial_number = serial_number
+        self.hardware_rev = hardware_rev
+        self.firmware_rev = firmware_rev
+        self.firmware_date = firmware_date
+        self.has_calibration = has_calibration
+        self.controls_grip = controls_grip
+        self.senses_grip = senses_grip
+        self.reverses_grip = reverses_grip
+        self.controls_force = controls_force
+        self.senses_force = senses_force
+        self.controls_position = controls_position
+        self.senses_position = senses_position
+        self.properties = properties
+
+    # =============
+    # Electric Flag
+    @property
+    def electric(self) -> bool:
+        ''' Flag for whether or not the Gripper type is Electric. '''
+        return self.ui_type == self.ELECTRIC_GRIPPER
+
+    # ===============
+    # Get Object Data
+    def _get_data(self, short: bool = False) -> _DATA:
+        return cast(
+            _DATA,
+            {
+                True: {
+                    'id': self.id,
+                    'ui_type': self.ui_type,
+                },
+                False: {
+                    'id': self.id,
+                    'ui_type': self.ui_type,
+                    'manufacturer': self.manufacturer,
+                    'product': self.product,
+                    'serial_number': self.serial_number,
+                    'hardware_rev': self.hardware_rev,
+                    'firmware_rev': self.firmware_rev,
+                    'firmware_date': self.firmware_date,
+                    'has_calibration': self.has_calibration,
+                    'controls_grip': self.controls_grip,
+                    'senses_grip': self.senses_grip,
+                    'reverses_grip': self.reverses_grip,
+                    'controls_force': self.controls_force,
+                    'senses_force': self.senses_force,
+                    'controls_position': self.controls_position,
+                    'senses_position': self.senses_position,
+                    'properties': self.properties,
+                },
+            }[short]
+        )
+    
+    # ===============
+    # Create from MSG
+    @staticmethod
+    def from_msg(msg: msgEndEffectorProperties) -> 'EndEffectorProperties':
+        return EndEffectorProperties(
+            id = msg.id,
+            ui_type = msg.ui_type,
+            manufacturer = msg.manufacturer,
+            product = msg.product,
+            serial_number = msg.serial_number,
+            hardware_rev = msg.hardware_rev,
+            firmware_rev = msg.firmware_rev,
+            firmware_date = msg.firmware_date,
+            has_calibration = msg.has_calibration,
+            controls_grip = msg.controls_grip,
+            senses_grip = msg.senses_grip,
+            reverses_grip = msg.reverses_grip,
+            controls_force = msg.controls_force,
+            senses_force = msg.senses_force,
+            controls_position = msg.controls_position,
+            senses_position = msg.senses_position,
+            properties = msg.properties,
+            skip_validation = True
+        )
+
+    # ==============
+    # Create Message
+    def create_msg(self) -> _MSG:
+        _msg = msgEndEffectorProperties()
+        _msg.id = self.id
+        _msg.ui_type = self.ui_type
+        _msg.manufacturer = self.manufacturer
+        _msg.product = self.product
+        _msg.serial_number = self.serial_number
+        _msg.hardware_rev = self.hardware_rev
+        _msg.firmware_rev = self.firmware_rev
+        _msg.firmware_date = self.firmware_date
+        _msg.has_calibration = self.has_calibration
+        _msg.controls_grip = self.controls_grip
+        _msg.senses_grip = self.senses_grip
+        _msg.reverses_grip = self.reverses_grip
+        _msg.controls_force = self.controls_force
+        _msg.senses_force = self.senses_force
+        _msg.controls_position = self.controls_position
+        _msg.senses_position = self.senses_position
+        _msg.properties = self.properties
+        return _msg
 
 # ================
 # EndEffectorState
-class EndEffectorState():
+class EndEffectorState(ROS2_msg, msgEndEffectorState):
     '''
     baxter_core_msgs - EndEffectorState
     -
 
     Data
     -
-    - id : `int`
-    - enabled : `int`
-    - calibrated : `int`
-    - ready : `int`
-    - moving : `int`
-    - gripping : `int`
-    - missed : `int`
-    - error : `int`
-    - reverse : `int`
-    - position : `float`
-    - force : `float`
-    - state : `str`
-    - command : `str`
-    - command_sender : `str`
-    - command_sequence : `int`
+    - timestamp : `Time`
+        - Time when state was updated.
+    - id : `uint32`
+        - End effector ID.
+    - enabled : `uint8`
+        - True if enabled.
+    - calibrated : `uint8`
+        - True if calibration has completed.
+    - ready : `uint8`
+        - True if ready for another command.
+    - moving : `uint8`
+        - True if moving.
+    - gripping : `uint8`
+        - True if gripping.
+    - missed : `uint8`
+        - True if GRIP/GOTO/SET was commanded and the gripper reaches the end
+            of travel.
+    - error : `uint8`
+        - True if the gripper is in an error state.
+    - reverse : `uint8`
+        - True if the gripper is in reverse mode.
+    - position : `float32`
+        - Position as a percentage of the max position.
+        - 0 = Closed.
+        - 100 = Opened.
+    - force : `float32`
+        - Force as a percentage of max force.
+        - 0 = None.
+        - 100 = Max.
+    - state : `string`
+        - Additional state information, JSON format.
+    - command : `string`
+        - From the previous command mesage.
+    - command_sender : `string`
+    - command_sequence : `uint32`
 
     Constants
     -
-    - STATE_FALSE : `int`
-    - STATE_TRUE : `int`
-    - STATE_UNKNOWN : `int`
-    - POSITION_CLOSED : `float`
-    - POSITION_OPEN : `float`
-    - FORCE_MIN : `float`
-    - FORCE_MAX : `float`
+    - STATE_FALSE : `uint8`
+    - STATE_TRUE : `uint8`
+    - STATE_UNKNOWN : `uint8`
+    - POSITION_CLOSED : `float32`
+    - POSITION_OPEN : `float32`
+    - FORCE_MIN : `float32`
+    - FORCE_MAX : `float32`
     '''
-    def __init__(self) -> None:
-        raise NotImplementedError()
+
+    # =========
+    # Constants
+    STATE_FALSE: int = 0
+    STATE_TRUE: int = 1
+    STATE_UNKNOWN: int = 2
+    STATES: List[int] = [
+        STATE_FALSE,
+        STATE_TRUE,
+        STATE_UNKNOWN,
+    ]
+    POSITION_CLOSED: float = 0.0
+    POSITION_OPEN: float = 100.0
+    FORCE_MIN: float = 0.0
+    FORCE_MAX: float = 100.0
+
+    # ===========
+    # Constructor
+    def __init__(
+            self,
+            timestamp: 'Time',
+            id: int,
+            enabled: int,
+            calibrated: int,
+            ready: int,
+            moving: int,
+            gripping: int,
+            missed: int,
+            error: int,
+            reverse: int,
+            position: float,
+            force: float,
+            state: str,
+            command: str,
+            command_sender: str,
+            command_sequence: int,
+            skip_validation: bool = False
+    ) -> None:
+        # validate data
+        if not skip_validation:
+            for _str in (
+                    [
+                        self._validate_input(
+                            timestamp,
+                            self.TYPE_TIME
+                        ),
+                        self._validate_input(
+                            id,
+                            self.TYPE_UINT32
+                        ),
+                        self._validate_input(
+                            enabled,
+                            self.TYPE_UINT8
+                        ),
+                        self._validate_input(
+                            calibrated,
+                            self.TYPE_UINT8
+                        ),
+                        self._validate_input(
+                            ready,
+                            self.TYPE_UINT8
+                        ),
+                        self._validate_input(
+                            moving,
+                            self.TYPE_UINT8
+                        ),
+                        self._validate_input(
+                            gripping,
+                            self.TYPE_UINT8
+                        ),
+                        self._validate_input(
+                            missed,
+                            self.TYPE_UINT8
+                        ),
+                        self._validate_input(
+                            error,
+                            self.TYPE_UINT8
+                        ),
+                        self._validate_input(
+                            reverse,
+                            self.TYPE_UINT8
+                        ),
+                        self._validate_input(
+                            position,
+                            self.TYPE_FLOAT32,
+                            data_range = (
+                                self.POSITION_CLOSED, 
+                                self.POSITION_OPEN
+                            )
+                        ),
+                        self._validate_input(
+                            force,
+                            self.TYPE_FLOAT32,
+                            data_range = (
+                                self.FORCE_MIN,
+                                self.FORCE_MAX
+                            )
+                        ),
+                        self._validate_input(
+                            state,
+                            self.TYPE_STRING
+                        ),
+                        self._validate_input(
+                            command,
+                            self.TYPE_STRING
+                        ),
+                        self._validate_input(
+                            command_sender,
+                            self.TYPE_STRING
+                        ),
+                        self._validate_input(
+                            command_sequence,
+                            self.TYPE_UINT32
+                        )
+                    ]
+            ):
+                if _str != '':
+                    raise ValueError(
+                        f'ROS2-MSG EndEffectorState Construct: {_str}'
+                    )
+                
+        # construct instance
+        super().__init__()
+        self.timestamp = timestamp
+        self.id = id
+        self.enabled = enabled
+        self.calibrated = calibrated
+        self.ready = ready
+        self.moving = moving
+        self.gripping = gripping
+        self.missed = missed
+        self.error = error
+        self.reverse = reverse
+        self.position = position
+        self.force = force
+        self.state = state
+        self.command = command
+        self.command_sender = command_sender
+        self.command_sequence = command_sequence
+
+    # ===============
+    # Get Object Data
+    def _get_data(self, short: bool = False) -> _DATA:
+        return cast(
+            _DATA,
+            {
+                True: {
+                    'id': self.id,
+                    'position': self.position,
+                },
+                False: {
+                    'timestamp': self.timestamp,
+                    'id': self.id,
+                    'enabled': self.enabled,
+                    'calibrated': self.calibrated,
+                    'ready': self.ready,
+                    'moving': self.moving,
+                    'gripping': self.gripping,
+                    'missed': self.missed,
+                    'error': self.error,
+                    'reverse': self.reverse,
+                    'position': self.position,
+                    'force': self.force,
+                    'state': self.state,
+                    'command': self.command,
+                    'command_sender': self.command_sender,
+                    'command_sequence': self.command_sequence,
+                }
+            }[short]
+        )
+    
+    # ===============
+    # Create from MSG
+    @staticmethod
+    def from_msg(msg: msgEndEffectorState) -> 'EndEffectorState':
+        return EndEffectorState(
+            timestamp = Time.from_msg(msg.timestamp),
+            id = msg.id,
+            enabled = msg.enabled,
+            calibrated = msg.calibrated,
+            ready = msg.ready,
+            moving = msg.moving,
+            gripping = msg.gripping,
+            missed = msg.missed,
+            error = msg.error,
+            reverse = msg.reverse,
+            position = msg.position,
+            force = msg.force,
+            state = msg.state,
+            command = msg.command,
+            command_sender = msg.command_sender,
+            command_sequence = msg.command_sequence,
+            skip_validation = True
+        )
+    
+    # ==============
+    # Create Message
+    def create_msg(self) -> msgEndEffectorState:
+        _msg = msgEndEffectorState()
+        _msg.timestamp = self.timestamp.create_msg()
+        _msg.id = self.id
+        _msg.enabled = self.enabled
+        _msg.calibrated = self.calibrated
+        _msg.ready = self.ready
+        _msg.moving = self.moving
+        _msg.gripping = self.gripping
+        _msg.missed = self.missed
+        _msg.error = self.error
+        _msg.reverse = self.reverse
+        _msg.position = self.position
+        _msg.force = self.force
+        _msg.state = self.state
+        _msg.command = self.command
+        _msg.command_sender = self.command_sender
+        _msg.command_sequence = self.command_sequence
+        return _msg
 
 # =============
 # EndpointState
