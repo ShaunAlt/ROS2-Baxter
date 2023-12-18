@@ -140,58 +140,46 @@ def t01(
         
         # button action functions
         def action_btn_circle_l(self, value: bool) -> None:
+            if V: print(f'{_t}| - Left Circle Press: {value}')
             if value:
-                pos_old: float = self.gripper_l.data_state.position
+                pos_old: float = self.gripper_l.pos
                 pos_new: float = min(100, pos_old + 10)
-                if V: 
-                    print(
-                        f'{_t}\t| - Left Circle - Moving Left Gripper from ' \
-                            + f'{pos_old} to {pos_new}'
-                    )
+                if V: print(f'{_t}\t| - Left Gripper: {pos_old} -> {pos_new}')
                 self.gripper_l.set_pos(pos_new) 
         def action_btn_circle_r(self, value: bool) -> None:
+            if V: print(f'{_t}| - Right Circle Press: {value}')
             if value:
-                pos_old: float = self.gripper_r.data_state.position
+                pos_old: float = self.gripper_r.pos
                 pos_new: float = min(100, pos_old + 10)
-                if V: 
-                    print(
-                        f'{_t}\t| - Right Circle - Moving Right Gripper from' \
-                            + f' {pos_old} to {pos_new}'
-                    )
+                if V: print(f'{_t}\t| - Right Gripper: {pos_old} -> {pos_new}')
                 self.gripper_r.set_pos(pos_new) 
         def action_btn_dash_l(self, value: bool) -> None:
+            if V: print(f'{_t}| - Left Dash Press: {value}')
             if value:
-                pos_old: float = self.gripper_l.data_state.position
+                pos_old: float = self.gripper_l.pos
                 pos_new: float = max(0, pos_old - 10)
-                if V: 
-                    print(
-                        f'{_t}\t| - Left Dash - Moving Left Gripper from ' \
-                            + f'{pos_old} to {pos_new}'
-                    )
+                if V: print(f'{_t}\t| - Left Gripper: {pos_old} -> {pos_new}')
                 self.gripper_l.set_pos(pos_new) 
         def action_btn_dash_r(self, value: bool) -> None:
+            if V: print(f'{_t}| - Right Dash Press: {value}')
             if value:
-                pos_old: float = self.gripper_r.data_state.position
+                pos_old: float = self.gripper_r.pos
                 pos_new: float = max(0, pos_old - 10)
-                if V: 
-                    print(
-                        f'{_t}\t| - Right Dash - Moving Right Gripper from ' \
-                            + f'{pos_old} to {pos_new}'
-                    )
+                if V: print(f'{_t}\t| - Right Gripper: {pos_old} -> {pos_new}')
                 self.gripper_r.set_pos(pos_new) 
         def action_btn_shoulder_l(self, value: bool) -> None:
+            if V: print(f'{_t}| - Left Shoulder Press: {value}')
             if value:
-                if V: 
-                    print(
-                        f'{_t}\t| - Left shoulder - Calibrating Left Gripper'
-                    )
+                if V: print(f'{_t}\t| - Left Gripper Configure')
+                self.gripper_l.configure()
+                if V: print(f'{_t}\t| - Left Gripper Calibrate')
                 self.gripper_l.calibrate()
         def action_btn_shoulder_r(self, value: bool) -> None:
-            if V: print(f'{_t}\t| - Right Shoulder Press: {value}')
+            if V: print(f'{_t}| - Right Shoulder Press: {value}')
             if value:
-                if V: print(f'{_t}\t\t| - Right Gripper Configure')
+                if V: print(f'{_t}\t| - Right Gripper Configure')
                 self.gripper_r.configure()
-                if V: print(f'{_t}\t\t| - Right Gripper Calibrate')
+                if V: print(f'{_t}\t| - Right Gripper Calibrate')
                 self.gripper_r.calibrate()
     r = Robot_t01()
 

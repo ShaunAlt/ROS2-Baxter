@@ -40,6 +40,7 @@ from . import (
 
     # - json
     JSONEncoder,
+    json_loads,
 
     # - time
     time,
@@ -143,6 +144,7 @@ class Gripper(ROS2_Node):
         self._cmd_seq: int = 0
         self._data_prop: Optional[MSG_EndEffectorProperties] = None
         self._data_state: Optional[MSG_EndEffectorState] = None
+        self._pos: float = 0
         self._topic: str = f'{topic}{Topics.Gripper.SubTopics.SUFFIX}'
         self.state_gripping = Signal()
         self.state_moving = Signal()
@@ -210,6 +212,13 @@ class Gripper(ROS2_Node):
     def data_state(self) -> Optional[MSG_EndEffectorState]:
         ''' State data for `Gripper`. '''
         return self._data_state
+    
+    # ========
+    # Position
+    @property
+    def pos(self) -> float:
+        ''' Gets the current position of the `Gripper`. '''
+        return self._pos
 
     # ============
     # Topic - Main
@@ -322,17 +331,15 @@ class Gripper(ROS2_Node):
 
         # create arguments
         if self._V: print(f'{_t}| - Creating Args')
-        _a: str
-        if args is not None:
-            _a = JSONEncoder().encode(args)
-        else:
-            _a = JSONEncoder().encode({
+        if args is None:
+            args = {
                 'position': 50,
                 'velocity': 30,
                 'moving_force': 30,
                 'holding_force': 30,
                 'dead_zone': 5,
-            })
+            }
+        _a: str = JSONEncoder().encode(args)
 
         # create command
         if self._V: print(f'{_t}| - Creating Command')
@@ -377,8 +384,13 @@ class Gripper(ROS2_Node):
                 block_test,
                 self,
                 timeout,
+                timeout_msg = f'{self} Command Block Timeout',
                 during_func = lambda: self._pub_cmd.publish(_cmd.create_msg())
             )
+        
+        # update position attribute
+        if 'position' in args:
+            self._pos = args['position']
 
     # =========
     # Calibrate
@@ -565,7 +577,7 @@ class Gripper(ROS2_Node):
         velocity = max(min(velocity, 100), 0)
         moving_force = max(min(moving_force, 100), 0)
         holding_force = max(min(holding_force, 100), 0)
-        dead_zone = max(min(dead_zone, 20), 0)
+        dead_zone = max(min(dead_zone, 20), 1)
         
         # create command
         self._command(
@@ -578,9 +590,11 @@ class Gripper(ROS2_Node):
                 'dead_zone': dead_zone,
             },
             block_test = lambda: (
-                (self.data_state is not None)
-                and (self.data_state.position >= pos - dead_zone)
-                and (self.data_state.position <= pos + dead_zone)
+                (not block)
+                or (
+                    (self.data_state is not None)
+                    and (not self.data_state.moving)
+                )
             )
         )
 

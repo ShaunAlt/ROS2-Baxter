@@ -46,7 +46,10 @@ from logging import (
 )
 
 # used for JSON encoding
-from json import JSONEncoder
+from json import (
+    JSONEncoder,
+    loads as json_loads,
+)
 
 # used for error tracebacks
 import traceback
