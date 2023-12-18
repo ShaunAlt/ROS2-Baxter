@@ -47,20 +47,14 @@ from . import (
 
 
 # =============================================================================
-# Constants Definition
-# =============================================================================
-ERR_DIR: str = 'baxter_int_ros2.digital_io'
-
-
-# =============================================================================
-# Baxter Digital IO Object
+# Baxter Limb Object
 # =============================================================================
 class DigitalIO(Node):
     '''
-    Baxter Digital IO Object
+    Baxter Limb Object
     -
-    Baxter interface object which is able to connect to a single Digital Input
-    and/or Output on the Baxter robot.
+    Baxter interface object which is able to connect to a single Limb on the
+    Baxter robot.
 
     Attributes
     -
@@ -76,7 +70,7 @@ class DigitalIO(Node):
     def __init__(
             self,
             topic: str,
-            verbose: bool = False
+            verbose: int = -1
     ) -> None:
         '''
         Baxter Digital IO Constructor

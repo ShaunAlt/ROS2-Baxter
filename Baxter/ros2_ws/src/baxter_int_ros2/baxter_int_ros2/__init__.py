@@ -230,8 +230,11 @@ class ROS2_obj():
         # create output string
         for i, _key in enumerate(data):
             _val = data[_key]
-            if isinstance(_val, list) and len(_val) > 50:
-                _val = f'List with {len(_val)} items.'
+            try:
+                if len(_val) > 50:
+                    _val = f'{type(_val)} with ({len(_val)}) items.'
+            except:
+                pass
             if i > 0:
                 output += ','
             output += f' {_key} = {_val}'
@@ -269,7 +272,7 @@ class ROS2_obj():
         for i, _key in enumerate(data):
             _val = data[_key]
             try:
-                if len(_val) > 50:
+                if len(_val) > 50 and not isinstance(_val, str):
                     _val = f'{type(_val)} with ({len(_val)}) items.'
             except:
                 pass

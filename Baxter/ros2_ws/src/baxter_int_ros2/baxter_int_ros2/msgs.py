@@ -28,6 +28,9 @@ from . import (
     # - array
     array,
 
+    # - json
+    JSONEncoder,
+
     # - baxter_core_msgs
     msgAnalogIOState,
     msgAnalogIOStates,
@@ -247,10 +250,10 @@ class ROS2_msg(ROS2_obj):
             )
         
         # validate if data is NULL (if required)
-        if (not nullable) and (data is None):
-            return (
-                'Invalid data: data is None'
-            )
+        if data is None:
+            if nullable:
+                return ''
+            return 'Invalid data: data is None'
         
         # validate is data is in options (if required)
         if (len(options) > 0) and (data not in options):
@@ -1668,7 +1671,7 @@ class EndEffectorCommand(ROS2_msg, msgEndEffectorCommand):
             self,
             id: int,
             command: str,
-            args: str,
+            args: Optional[str] = None,
             sender: Optional[str] = None,
             sequence: Optional[int] = None,
             skip_validation: bool = False
@@ -1688,7 +1691,8 @@ class EndEffectorCommand(ROS2_msg, msgEndEffectorCommand):
                         ),
                         self._validate_input(
                             args,
-                            self.TYPE_STRING
+                            self.TYPE_STRING,
+                            nullable = True
                         ),
                         self._validate_input(
                             sender,
@@ -1697,7 +1701,7 @@ class EndEffectorCommand(ROS2_msg, msgEndEffectorCommand):
                         ),
                         self._validate_input(
                             sequence,
-                            self.TYPE_STRING,
+                            self.TYPE_UINT32,
                             nullable = True
                         )
                     ]
@@ -1711,9 +1715,12 @@ class EndEffectorCommand(ROS2_msg, msgEndEffectorCommand):
         super().__init__()
         self.id = id
         self.command = command
-        self.args = args
-        self.sender = sender
-        self.sequence = sequence
+        self.args = {True: '', False: args}[args is None]
+        # self.sender = {True: '', False: sender}[sender is None]
+        if sender is not None:
+            self.sender = sender
+        if sequence is not None:
+            self.sequence = sequence
 
     # ===============
     # Get Object Data

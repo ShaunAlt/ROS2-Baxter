@@ -20,6 +20,7 @@ from . import (
     # - typing
     Any,
     cast,
+    Callable,
     Dict,
     List,
     Optional,
@@ -276,12 +277,243 @@ class Gripper(ROS2_Node):
             }[short]
         )
 
+    # ==============
+    # Create Command
+    def _command(
+            self,
+            cmd: str,
+            timeout: float = 2.0,
+            block_test: Callable[[], bool] = lambda: True,
+            args: Optional[Dict[str, Any]] = None
+    ) -> None:
+        '''
+        Create Command
+        -
+        Creates a command for the `Gripper`.
+
+        Parameters
+        -
+        - cmd : `str`
+            - Command being published to the `Gripper`.
+        - timeout : `float`
+            - Number of seconds after which to timeout the flag function and 
+                raise an error. Defaults to 0 seconds, which means no 
+                timeout block (the function will run once and then the program
+                will move on).
+        - block_test : `Callable[[], bool]`
+            - Test function to be used in the timeout block.
+        - args : `dict[str, Any] | None`
+            - Optional arguments to parse to the command.
+
+        Returns
+        -
+        None
+        '''
+
+        # set verbosity indentation
+        _t: str = '\t' * self._verbose_sub
+        if self._V: print(f'{_t}* Create Command ({self.node_name} - {cmd})')
+
+        # validate state data exists
+        if self.data_state is None:
+            raise RuntimeWarning(
+                f'Gripper {self} tried command without any `data_state` set.'
+            )
+
+        # create arguments
+        if self._V: print(f'{_t}| - Creating Args')
+        _a: str
+        if args is not None:
+            _a = JSONEncoder().encode(args)
+        else:
+            _a = JSONEncoder().encode({
+                'position': 50,
+                'velocity': 30,
+                'moving_force': 30,
+                'holding_force': 30,
+                'dead_zone': 5,
+            })
+
+        # create command
+        if self._V: print(f'{_t}| - Creating Command')
+        _cmd = MSG_EndEffectorCommand(
+            id = self.data_state.id,
+            command = cmd,
+            args = _a,
+            sender = self.node_name,
+            sequence = self.cmd_seq
+        )
+
+        # publish command
+        if self._V: print(f'{_t}| - Publishing Command')
+        self._pub_cmd.publish(_cmd.create_msg())
+
+        if timeout > 0:
+            # ensure message was acknowledged
+            if self._V: print(f'{_t}| - Ensure Message Acknowledgement')
+            msg_ack = df_wait(
+                lambda: (
+                    (self.data_state is not None)
+                    and (self.data_state.command_sender == _cmd.sender) 
+                    and (
+                        (self.data_state.command_sequence == _cmd.sequence)
+                        or (self.data_state.command_sequence == 0)
+                    )
+                ),
+                self,
+                timeout,
+                raise_err = False,
+                timeout_msg = f'{self} Command {cmd} Timeout',
+                during_func = lambda: self._pub_cmd.publish(_cmd.create_msg())
+            )
+            if not msg_ack:
+                raise RuntimeWarning(
+                    f'Gripper {self.node_name} Command {cmd} not Acknowledged.'
+                )
+            
+            # ensure message was run as required
+            if self._V: print(f'{_t}| - Ensure Message Completed')
+            df_wait(
+                block_test,
+                self,
+                timeout,
+                during_func = lambda: self._pub_cmd.publish(_cmd.create_msg())
+            )
+
+    # =========
+    # Calibrate
+    def calibrate(
+            self,
+            clear_calibration: bool = False,
+            verbosity: int = -1
+    ) -> None:
+        '''
+        Calibrate
+        -
+        Calibrates the gripper setting the maximum and minimum travel
+        distances.
+
+        Parameters
+        -
+        - clear_calibration : `bool`
+            - Whether or not to to clear the current gripper calibration.
+        - verbosity : `int`
+            - Override value which overrides the current verbosity level for
+                the `Gripper` object.
+
+        Returns
+        -
+        None
+        '''
+
+        # setting verbosity indentation
+        V: bool = self._V or verbosity >= 0
+        _t: str = '\t' * max(self._verbose_sub, verbosity)
+        _sub_v: int = {
+            True: max(self._verbose_sub, verbosity) + 1,
+            False: -1
+        }[V]
+        if V: print(f'{_t}* Calibrate {self.node_name}')
+
+        # validate state data exists
+        if self.data_state is None:
+            raise RuntimeWarning(
+                f'Gripper {self} tried calibrate without any `data_state` set.'
+            )
+        
+        # create command
+        if clear_calibration:
+            if V: print(f'{_t}| - Clear Calibration')
+            self._command(
+                MSG_EndEffectorCommand.CMD_CLEAR_CALIBRATION,
+                block_test = lambda: (
+                    (self.data_state is not None)
+                    and (
+                        self.data_state.calibrated \
+                            == MSG_EndEffectorState.STATE_FALSE
+                    )
+                )
+            )
+        else:
+            if V: print(f'{_t}| - Calibrate')
+            if self.data_state.calibrated == self.data_state.STATE_TRUE:
+                if V: print(f'{_t}| - Clear Calibration First')
+                self.calibrate(clear_calibration = True, verbosity = _sub_v)
+            self._command(
+                MSG_EndEffectorCommand.CMD_CALIBRATE,
+                block_test = lambda: (
+                    (self.data_state is not None)
+                    and (
+                        self.data_state.calibrated \
+                            == MSG_EndEffectorState.STATE_TRUE
+                    )
+                )
+            )
+        
+        if V: print(f'{_t}| - Done')
+
+    # =========
+    # Configure
+    def configure(self) -> None:
+        '''
+        Configure
+        -
+        Configures the gripper.
+
+        Parameters
+        -
+        None
+
+        Returns
+        -
+        None
+        '''
+
+        # validate state data exists
+        if self.data_state is None:
+            raise RuntimeWarning(
+                f'Gripper {self} tried calibrate without any `data_state` set.'
+            )
+
+        # publish configuration command
+        self._command(
+            MSG_EndEffectorCommand.CMD_CONFIGURE
+        )
+
+    # =====
+    # Reset
+    def reset(self) -> None:
+        '''
+        Reset
+        -
+        Resets the gripper state, removing any errors.
+
+        Parameters
+        -
+        None
+
+        Returns
+        -
+        None
+        '''
+
+        # validate state data exists
+        if self.data_state is None:
+            raise RuntimeWarning(
+                f'Gripper {self} tried reset without any `data_state` set.'
+            )
+        
+        # create command
+        self._command(
+            MSG_EndEffectorCommand.CMD_RESET
+        )
+
     # ============
     # Set Position
     def set_pos(
             self,
             pos: float,
-            block: bool = False,
+            block: bool = True,
             velocity: float = 50.0,
             moving_force: float = 50.0,
             holding_force: float = 50.0,
@@ -332,21 +564,24 @@ class Gripper(ROS2_Node):
         pos = max(min(pos, 100), 0)
         velocity = max(min(velocity, 100), 0)
         moving_force = max(min(moving_force, 100), 0)
+        holding_force = max(min(holding_force, 100), 0)
+        dead_zone = max(min(dead_zone, 20), 0)
         
         # create command
-        self._pub_cmd(
-            MSG_EndEffectorCommand(
-                id = self.data_state.id,
-                command = MSG_EndEffectorCommand.CMD_GO,
-                sender = self.node_name,
-                sequence = self.cmd_seq,
-                args = JSONEncoder().encode({
-                    'velocity': velocity,
-                    'moving_force': moving_force,
-                    'holding_force': holding_force,
-                    'dead_zone': dead_zone,
-                })
-            ).create_msg()
+        self._command(
+            MSG_EndEffectorCommand.CMD_GO,
+            args = {
+                'position': pos,
+                'velocity': velocity,
+                'moving_force': moving_force,
+                'holding_force': holding_force,
+                'dead_zone': dead_zone,
+            },
+            block_test = lambda: (
+                (self.data_state is not None)
+                and (self.data_state.position >= pos - dead_zone)
+                and (self.data_state.position <= pos + dead_zone)
+            )
         )
 
     # ================================
