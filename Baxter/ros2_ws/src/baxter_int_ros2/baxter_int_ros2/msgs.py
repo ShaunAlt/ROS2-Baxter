@@ -495,25 +495,27 @@ class Header(ROS2_msg, msgHeader):
     def __init__(
             self,
             stamp: 'Time',
-            frame_id: str
+            frame_id: str,
+            skip_validation: bool = False
     ) -> None:
         # validate data
-        for _str in (
-                [
-                    self._validate_input(
-                        stamp,
-                        self.TYPE_TIME
-                    ),
-                    self._validate_input(
-                        frame_id,
-                        self.TYPE_STRING
+        if not skip_validation:
+            for _str in (
+                    [
+                        self._validate_input(
+                            stamp,
+                            self.TYPE_TIME
+                        ),
+                        self._validate_input(
+                            frame_id,
+                            self.TYPE_STRING
+                        )
+                    ]
+            ):
+                if _str != '':
+                    raise ValueError(
+                        f'ROS2-MSG Header Construct: {_str}'
                     )
-                ]
-        ):
-            if _str != '':
-                raise ValueError(
-                    f'ROS2-MSG Header Construct: {_str}'
-                )
 
         # construct instance
         super().__init__()
@@ -546,7 +548,8 @@ class Header(ROS2_msg, msgHeader):
     def from_msg(msg: msgHeader) -> 'Header':
         return Header(
             stamp = Time.from_msg(msg.stamp),
-            frame_id = msg.frame_id
+            frame_id = msg.frame_id,
+            skip_validation = True
         )
 
 # =====
