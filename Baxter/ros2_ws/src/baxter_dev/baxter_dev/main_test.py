@@ -79,8 +79,11 @@ def t01(
     V: bool = verbose >= 0
     _t: str = '\t' * verbose
     _sub_v: int = {True: verbose + 1, False: -1}[V]
-    if V: 
-        print(f'{_t}Gripper Test 01 - Open and Close Grippers using DigitalIO')
+    if V:
+        print(
+            f'{_t}Main Test 01:\n\t{_t}Read the `Limb` positions, ' \
+            + 'velocities, and efforts using `DigitalIO` button reads.'
+        )
 
     # rclpy initialize
     if V: print(f'| - Initializing RCLPY')
@@ -88,16 +91,108 @@ def t01(
 
     # creating cameras
     if V: print(f'{_t}| - Creating Grippers and DigitalIOs')
-    class Robot_t01():
+    class Robot():
         def __init__(self) -> None:
-            pass
+            # create limbs
+            self.limb_L = Limb(Topics.Limb.LEFT, _sub_v)
+            self.limb_R = Limb(Topics.Limb.RIGHT, _sub_v)
+
+            # create buttons for reading
+            self.btn_back_L = DigitalIO(
+                Topics.DigitalIO.LEFT_BUTTON_BACK
+            )
+            self.btn_ok_L = DigitalIO(
+                Topics.DigitalIO.LEFT_BUTTON_OK
+            )
+            self.btn_shoulder_L = DigitalIO(
+                Topics.DigitalIO.LEFT_SHOULDER_BUTTON
+            )
+            self.btn_show_L = DigitalIO(
+                Topics.DigitalIO.LEFT_BUTTON_SHOW
+            )
+            self.btn_back_R = DigitalIO(
+                Topics.DigitalIO.RIGHT_BUTTON_BACK
+            )
+            self.btn_ok_R = DigitalIO(
+                Topics.DigitalIO.RIGHT_BUTTON_OK
+            )
+            self.btn_shoulder_R = DigitalIO(
+                Topics.DigitalIO.RIGHT_SHOULDER_BUTTON
+            )
+            self.btn_show_R = DigitalIO(
+                Topics.DigitalIO.RIGHT_BUTTON_SHOW
+            )
+
+            # creating button action event listeners
+            self.btn_back_L.state_changed.connect(self.disp_pos_L)
+            self.btn_ok_L.state_changed.connect(self.disp_vel_L)
+            self.btn_show_L.state_changed.connect(self.disp_tor_L)
+            self.btn_shoulder_L.state_changed.connect(self.disp_all_L)
+            self.btn_back_R.state_changed.connect(self.disp_pos_R)
+            self.btn_ok_R.state_changed.connect(self.disp_vel_R)
+            self.btn_show_R.state_changed.connect(self.disp_tor_R)
+            self.btn_shoulder_R.state_changed.connect(self.disp_all_R)
 
         # list of nodes being used
         @property
         def nodes(self) -> List[Any]:
             return [
+                self.limb_L,
+                self.limb_R,
+                self.btn_back_L,
+                self.btn_ok_L,
+                self.btn_shoulder_L,
+                self.btn_show_L,
+                self.btn_ok_R,
+                self.btn_back_R,
+                self.btn_shoulder_R,
+                self.btn_show_R,
             ]
-    r = Robot_t01()
+        
+        # button actions
+        def disp_pos_L(self, value: bool) -> None:
+            if V: print(f'{_t}| - Display Left Positions: {value}')
+            if value:
+                print(f'{_t}| - Left Positions: {self.limb_L.data_positions}')
+        def disp_vel_L(self, value: bool) -> None:
+            if V: print(f'{_t}| - Display Left Velocites: {value}')
+            if value:
+                print(f'{_t}| - Left Velocites: {self.limb_L.data_velocities}')
+        def disp_tor_L(self, value: bool) -> None:
+            if V: print(f'{_t}| - Display Left Torques: {value}')
+            if value:
+                print(f'{_t}| - Left Torques: {self.limb_L.data_torques}')
+        def disp_all_L(self, value: bool) -> None:
+            if V: print(f'{_t}| - Display Left All Data: {value}')
+            if value:
+                print(
+                    f'{_t}| - Left Data:\n' \
+                    + f'\t{_t}| - Positions: {self.limb_L.data_positions}\n' \
+                    + f'\t{_t}| - Velocities: {self.limb_L.data_velocities}' \
+                    + f'\n\t{_t}| - Torques: {self.limb_L.data_torques}' \
+                )
+        def disp_pos_R(self, value: bool) -> None:
+            if V: print(f'{_t}| - Display Right Positions: {value}')
+            if value:
+                print(f'{_t}| - Right Positions: {self.limb_R.data_positions}')
+        def disp_vel_R(self, value: bool) -> None:
+            if V: print(f'{_t}| - Display Right Velocites: {value}')
+            if value:
+                print(f'{_t}| - Right Velocites: {self.limb_R.data_velocities}')
+        def disp_tor_R(self, value: bool) -> None:
+            if V: print(f'{_t}| - Display Right Torques: {value}')
+            if value:
+                print(f'{_t}| - Right Torques: {self.limb_R.data_torques}')
+        def disp_all_R(self, value: bool) -> None:
+            if V: print(f'{_t}| - Display Right All Data: {value}')
+            if value:
+                print(
+                    f'{_t}| - Right Data:\n' \
+                    + f'\t{_t}| - Positions: {self.limb_R.data_positions}\n' \
+                    + f'\t{_t}| - Velocities: {self.limb_R.data_velocities}' \
+                    + f'\n\t{_t}| - Torques: {self.limb_R.data_torques}' \
+                )
+    r = Robot()
 
     # spin
     print(f'{_t}| - Spinning')

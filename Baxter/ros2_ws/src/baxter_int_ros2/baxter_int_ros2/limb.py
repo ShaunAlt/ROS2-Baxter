@@ -20,8 +20,10 @@ from . import (
     # - typing
     Any,
     Callable,
+    Dict,
     List,
     Optional,
+    Tuple,
     TYPE_CHECKING,
 
     # - array
@@ -281,6 +283,51 @@ class Limb(ROS2_Node):
         if (self.data_joint_w2 is not None) and (self.data_joint_w2 != data):
             self.state_joint_w2(data)
         self._joint_w2 = data
+
+    # ======
+    # Joints
+    @property
+    def joints(self) -> List[Tuple[str, Optional[_JOINT], str]]:
+        ''' List of joint names (short and long) and joint data. '''
+        return [
+            ('E0', self.data_joint_e0, f'{self._topic}_e0'),
+            ('E1', self.data_joint_e1, f'{self._topic}_e1'),
+            ('S0', self.data_joint_s0, f'{self._topic}_s0'),
+            ('S1', self.data_joint_s1, f'{self._topic}_s1'),
+            ('W0', self.data_joint_w0, f'{self._topic}_w0'),
+            ('W1', self.data_joint_w1, f'{self._topic}_w1'),
+            ('W2', self.data_joint_w2, f'{self._topic}_w2'),
+        ]
+
+    # ================
+    # Data - Positions
+    @property
+    def data_positions(self) -> Dict[str, Optional[float]]:
+        ''' `Limb` joint positions data in `Dict` format. '''
+        return {
+            _joint_name: _joint_data[0] if _joint_data is not None else None
+            for _joint_name, _joint_data, _ in self.joints
+        }
+
+    # =================
+    # Data - Velocities
+    @property
+    def data_velocities(self) -> Dict[str, Optional[float]]:
+        ''' `Limb` joint velocities data in `Dict` format. '''
+        return {
+            _joint_name: _joint_data[1] if _joint_data is not None else None
+            for _joint_name, _joint_data, _ in self.joints
+        }
+
+    # ==============
+    # Data - Torques
+    @property
+    def data_torques(self) -> Dict[str, Optional[float]]:
+        ''' `Limb` joint torques data in `Dict` format. '''
+        return {
+            _joint_name: _joint_data[2] if _joint_data is not None else None
+            for _joint_name, _joint_data, _ in self.joints
+        }
         
     # ============
     # Topic - Main
