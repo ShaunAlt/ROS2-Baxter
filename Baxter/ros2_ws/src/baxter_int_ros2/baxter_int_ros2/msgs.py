@@ -2829,6 +2829,27 @@ class JointCommand(ROS2_msg, msgJointCommand):
         self.names = names
 
     # ===============
+    # Get Object Data
+    def _get_data(
+            self,
+            short: bool = False
+    ) -> _DATA:
+        if short:
+            return {
+                'mode': self.mode,
+                'number': len(self.command),
+            }
+        return {
+            'mode': self.mode,
+            'command': self.command,
+            'names': self.names,
+            'POSITION_MODE': self.mode == self.POSITION_MODE,
+            'VELOCITY_MODE': self.mode == self.VELOCITY_MODE,
+            'TORQUE_MODE': self.mode == self.TORQUE_MODE,
+            'RAW_POSITION_MODE': self.mode == self.RAW_POSITION_MODE,
+        }
+
+    # ===============
     # Create from MSG
     @staticmethod
     def from_msg(msg: msgJointCommand) -> 'JointCommand':

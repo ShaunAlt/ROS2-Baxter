@@ -468,6 +468,7 @@ class Limb(ROS2_Node):
 
         # publish command
         self.log('| - Publishing Command', tab_increase+1)
+        self.log(f'| - Command = {repr(cmd)}', tab_increase+2)
         self._pub_joint.publish(cmd.create_msg())
 
         # run timeout loop if required
@@ -543,7 +544,7 @@ class Limb(ROS2_Node):
                 self,
                 timeout,
                 raise_err = False,
-                timeout_msg = 'Limb {self.node_name} Joint Command Timeout',
+                timeout_msg = f'Limb {self.node_name} Joint Command Timeout',
                 during_func = lambda: self._pub_joint.publish(cmd.create_msg())
             )
 
