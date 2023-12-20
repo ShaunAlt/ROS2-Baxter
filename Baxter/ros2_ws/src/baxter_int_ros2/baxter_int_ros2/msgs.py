@@ -20,6 +20,7 @@ from . import (
     _DATA,
     Any,
     cast,
+    Dict,
     List,
     Optional,
     Tuple,
@@ -66,8 +67,10 @@ from . import (
 
     # - sensor_msgs
     msgImage,
+    msgJointState,
 
     # - std_msgs
+    msgFloat64,
     msgHeader,
 
     # - baxter_int_ros2_support
@@ -75,6 +78,7 @@ from . import (
 
     # - .
     ROS2_obj,
+    _JOINT,
     _MSG,
 )
 
@@ -414,6 +418,64 @@ class ROS2_msg(ROS2_obj):
 # ROS2 Messages
 # =============================================================================
 
+# =======
+# Float64
+class Float64(ROS2_msg, msgFloat64):
+    '''
+    std_msgs - Float64
+    -
+
+    Data
+    -
+    - data : `float64`
+        - Data value.
+    '''
+
+    # ===========
+    # Constructor
+    def __init__(
+            self,
+            data: float,
+            skip_validation: bool = False
+    ) -> None:
+        # validate data
+        if not skip_validation:
+            for _str in (
+                    self._validate_input(
+                        data,
+                        self.TYPE_FLOAT64
+                    )
+            ):
+                if _str != '':
+                    raise ValueError(
+                        f'ROS2-MSG Float64 Construct: {_str}'
+                    )
+                
+        # construct instance
+        super().__init__()
+        self.data = data
+
+    # ===============
+    # Get Object Data
+    def _get_data(self, short: bool = False) -> _DATA:
+        return {'data': self.data}
+    
+    # ===============
+    # Create from MSG
+    @staticmethod
+    def from_msg(msg: msgFloat64) -> 'Float64':
+        return Float64(
+            data = msg.data,
+            skip_validation = True
+        )
+    
+    # ==============
+    # Create Message
+    def create_msg(self) -> _MSG:
+        _msg = msgFloat64()
+        _msg.data = self.data
+        return _msg
+
 # ======
 # Header
 class Header(ROS2_msg, msgHeader):
@@ -538,6 +600,16 @@ class Point(ROS2_msg, msgPoint):
         self.y = y
         self.z = z
 
+    # ==============
+    # Equality Check
+    def __eq__(self, __value: object) -> bool:
+        return (
+            isinstance(__value, Point)
+            and (self.x == __value.x)
+            and (self.y == __value.y)
+            and (self.z == __value.z)
+        )
+
     # ===============
     # Get Object Data
     def _get_data(self, short: bool = False) -> _DATA:
@@ -603,6 +675,15 @@ class Pose(ROS2_msg, msgPose):
         super().__init__()
         self.position = position
         self.orientation = orientation
+
+    # ==============
+    # Equality Check
+    def __eq__(self, __value: object) -> bool:
+        return (
+            isinstance(__value, Pose)
+            and (self.position == __value.position)
+            and (self.orientation == __value.orientation)
+        )
 
     # ===============
     # Get Object Data
@@ -697,6 +778,17 @@ class Quaternion(ROS2_msg, msgQuaternion):
         self.y = y
         self.z = z
         self.w = w
+
+    # ==============
+    # Equality Check
+    def __eq__(self, __value: object) -> bool:
+        return (
+            isinstance(__value, Quaternion)
+            and (self.x == __value.x)
+            and (self.y == __value.y)
+            and (self.z == __value.z)
+            and (self.w == __value.w)
+        )
 
     # ===============
     # Get Object Data
@@ -830,6 +922,15 @@ class Twist(ROS2_msg, msgTwist):
         self.linear = linear
         self.angular = angular
 
+    # ==============
+    # Equality Check
+    def __eq__(self, __value: object) -> bool:
+        return (
+            isinstance(__value, Twist)
+            and (self.linear == __value.linear)
+            and (self.angular == __value.angular)
+        )
+
     # ===============
     # Get Object Data
     def _get_data(self, short: bool = False) -> _DATA:
@@ -915,6 +1016,16 @@ class Vector3(ROS2_msg, msgVector3):
         self.y = y
         self.z = z
 
+    # ==============
+    # Equality Check
+    def __eq__(self, __value: object) -> bool:
+        return (
+            isinstance(__value, Vector3)
+            and (self.x == __value.x)
+            and (self.y == __value.y)
+            and (self.z == __value.z)
+        )
+
     # ===============
     # Get Object Data
     def _get_data(self, short: bool = False) -> _DATA:
@@ -978,6 +1089,15 @@ class Wrench(ROS2_msg, msgWrench):
         super().__init__()
         self.force = force
         self.torque = torque
+
+    # ==============
+    # Equality Check
+    def __eq__(self, __value: object) -> bool:
+        return (
+            isinstance(__value, Wrench)
+            and (self.force == __value.force)
+            and (self.torque == __value.torque)
+        )
 
     # ===============
     # Get Object Data
@@ -2377,6 +2497,16 @@ class EndpointState(ROS2_msg, msgEndpointState):
         self.twist = twist
         self.wrench = wrench
 
+    # ==============
+    # Equality Check
+    def __eq__(self, __value: object) -> bool:
+        return (
+            isinstance(__value, EndpointState)
+            and (self.pose == __value.pose)
+            and (self.twist == __value.twist)
+            and (self.wrench == __value.wrench)
+        )
+
     # ===============
     # Create from MSG
     @staticmethod
@@ -2603,6 +2733,12 @@ class JointCommand(ROS2_msg, msgJointCommand):
     VELOCITY_MODE: int = 2
     TORQUE_MODE: int = 3
     RAW_POSITION_MODE: int = 4
+    MODES: List[int] = [
+        POSITION_MODE,
+        VELOCITY_MODE,
+        TORQUE_MODE,
+        RAW_POSITION_MODE,
+    ]
     NAME_L_E0: str = 'left_e0'
     NAME_L_E1: str = 'left_e1'
     NAME_L_S0: str = 'left_s0'
@@ -2653,12 +2789,7 @@ class JointCommand(ROS2_msg, msgJointCommand):
                         self._validate_input(
                             mode,
                             self.TYPE_INT32,
-                            options = [
-                                self.POSITION_MODE,
-                                self.VELOCITY_MODE,
-                                self.TORQUE_MODE,
-                                self.RAW_POSITION_MODE,
-                            ]
+                            options = self.MODES,
                         ),
                         self._validate_input(
                             command,
@@ -2705,6 +2836,93 @@ class JointCommand(ROS2_msg, msgJointCommand):
             skip_validation = True
         )
     
+    # ===================
+    # Create Message Data
+    @classmethod
+    def create_data(
+            cls,
+            left: bool,
+            e0: Optional[float] = None,
+            e1: Optional[float] = None,
+            s0: Optional[float] = None,
+            s1: Optional[float] = None,
+            w0: Optional[float] = None,
+            w1: Optional[float] = None,
+            w2: Optional[float] = None
+    ) -> Tuple[List[str], List[float]]:
+        '''
+        Create Message Data
+        -
+        Creates `array` objects containing the list of names and commands that
+        are needed for the `JointCommand` object.
+
+        Parameters
+        -
+        - left : `bool`
+            - Whether to use the left or right side of `Baxter`. `True` means
+                LEFT, `False` means RIGHT.
+        - e0 : `float | None`
+            - Value to give to the Elbow-0 Joint. If `None` then will not
+                publish a value to this joint.
+        - e1 : `float | None`
+            - Value to give to the Elbow-1 Joint. If `None` then will not
+                publish a value to this joint.
+        - s0 : `float | None`
+            - Value to give to the Shoulder-0 Joint. If `None` then will not
+                publish a value to this joint.
+        - s1 : `float | None`
+            - Value to give to the Shoulder-1 Joint. If `None` then will not
+                publish a value to this joint.
+        - w0 : `float | None`
+            - Value to give to the Wrist-0 Joint. If `None` then will not
+                publish a value to this joint.
+        - w1 : `float | None`
+            - Value to give to the Wrist-1 Joint. If `None` then will not
+                publish a value to this joint.
+        - w2 : `float | None`
+            - Value to give to the Wrist-2 Joint. If `None` then will not
+                publish a value to this joint.
+
+        Returns
+        -
+        - `tuple[array[str], array[float]]`
+            - `array[str]`
+                - List of joint names.
+            - `array[float]`
+                - List of joint commands.
+            - Both arrays should have an identical length.
+        '''
+
+        # initialize values
+        _names: List[str] = []
+        _cmds: List[float] = []
+
+        # create data
+        if e0 is not None:
+            _names.append({True: cls.NAME_L_E0, False: cls.NAME_R_E0}[left])
+            _cmds.append(e0)
+        if e1 is not None:
+            _names.append({True: cls.NAME_L_E1, False: cls.NAME_R_E1}[left])
+            _cmds.append(e1)
+        if s0 is not None:
+            _names.append({True: cls.NAME_L_S0, False: cls.NAME_R_S0}[left])
+            _cmds.append(s0)
+        if s1 is not None:
+            _names.append({True: cls.NAME_L_S1, False: cls.NAME_R_S1}[left])
+            _cmds.append(s1)
+        if w0 is not None:
+            _names.append({True: cls.NAME_L_W0, False: cls.NAME_R_W0}[left])
+            _cmds.append(w0)
+        if w1 is not None:
+            _names.append({True: cls.NAME_L_W1, False: cls.NAME_R_W1}[left])
+            _cmds.append(w1)
+        if w2 is not None:
+            _names.append({True: cls.NAME_L_W2, False: cls.NAME_R_W2}[left])
+            _cmds.append(w2)
+
+        # convert to arrays
+        return (_names, _cmds)
+
     # ==============
     # Create Message
     def create_msg(self) -> msgJointCommand:
@@ -2713,6 +2931,279 @@ class JointCommand(ROS2_msg, msgJointCommand):
         m.command = self.command
         m.names = self.names
         return m
+
+# ==========
+# JointState
+class JointState(ROS2_msg, msgJointState):
+    '''
+    sensor_msgs - JointState
+    -
+    Holds data to describe the state of a set of torque controlled joints.
+
+    Data
+    -
+    - header : `Header`
+    - name : `string[]`
+    - position : `float64[]`
+    - velocity : `float64[]`
+    - effort : `float64[]`
+
+    Custom Constants
+    -
+    - NAME_HEAD_NOD : `str`
+        - Up/Down head motion.
+    - NAME_HEAD_PAN : `str`
+        - Side-Side head motion.
+    - NAME_LEFT_E0 : `str`
+        - Twisting elbow motion. (Left-Arm).
+    - NAME_LEFT_E1 : `str`
+        - Rotating elbow motion. (Left-Arm).
+    - NAME_LEFT_S0 : `str`
+        - Base horizontal rotating shoulder joint. (Left-Arm).
+    - NAME_LEFT_S1 : `str`
+        - Vertical rotating shoulder joint. (Left-Arm).
+    - NAME_LEFT_W0 : `str`
+        - Large twisting wrist joint. (Left-Arm).
+    - NAME_LEFT_W1 : `str`
+        - Rotating wrist joint. (Left-Arm).
+    - NAME_LEFT_W2 : `str`
+        - Small twisting wrist joint. (Left-Arm).
+    - NAME_RIGHT_E0 : `str`
+        - Twisting elbow motion. (Right-Arm).
+    - NAME_RIGHT_E1 : `str`
+        - Rotating elbow motion. (Right-Arm).
+    - NAME_RIGHT_S0 : `str`
+        - Base horizontal rotating shoulder joint. (Right-Arm).
+    - NAME_RIGHT_S1 : `str`
+        - Vertical rotating shoulder joint. (Right-Arm).
+    - NAME_RIGHT_W0 : `str`
+        - Large twisting wrist joint. (Right-Arm).
+    - NAME_RIGHT_W1 : `str`
+        - Rotating wrist joint. (Right-Arm).
+    - NAME_RIGHT_W2 : `str`
+        - Small twisting wrist joint. (Right-Arm).
+    - NAME_TORSO_T0 : `str`
+        - Unknown Joint.
+    - NAME_LEFT_GRIPPER_LEFT_FINGER : `str`
+        - Left Finger on Left Gripper.
+    - NAME_LEFT_GRIPPER_RIGHT_FINGER : `str`
+        - Right Finger on Left Gripper.
+    - NAME_RIGHT_GRIPPER_LEFT_FINGER : `str`
+        - Left Finger on Right Gripper.
+    - NAME_RIGHT_GRIPPER_RIGHT_FINGER : `str`
+        - Right Finger on Right Gripper.
+    - NAMES : `list[str]`
+        - List of joint names.
+    '''
+
+    # =========
+    # Constants
+    NAME_HEAD_NOD: str = 'head_nod'
+    NAME_HEAD_PAN: str = 'head_pan'
+    NAME_LEFT_E0: str = 'left_e0'
+    NAME_LEFT_E1: str = 'left_e1'
+    NAME_LEFT_S0: str = 'left_s0'
+    NAME_LEFT_S1: str = 'left_s1'
+    NAME_LEFT_W0: str = 'left_w0'
+    NAME_LEFT_W1: str = 'left_w1'
+    NAME_LEFT_W2: str = 'left_w2'
+    NAME_RIGHT_E0: str = 'right_e0'
+    NAME_RIGHT_E1: str = 'right_e1'
+    NAME_RIGHT_S0: str = 'right_s0'
+    NAME_RIGHT_S1: str = 'right_s1'
+    NAME_RIGHT_W0: str = 'right_w0'
+    NAME_RIGHT_W1: str = 'right_w1'
+    NAME_RIGHT_W2: str = 'right_w2'
+    NAME_TORSO_T0: str = 'torso_t0'
+    NAME_LEFT_GRIPPER_LEFT_FINGER: str = 'l_gripper_l_finger_joint'
+    NAME_LEFT_GRIPPER_RIGHT_FINGER: str = 'l_gripper_r_finger_joint'
+    NAME_RIGHT_GRIPPER_LEFT_FINGER: str = 'r_gripper_l_finger_joint'
+    NAME_RIGHT_GRIPPER_RIGHT_FINGER: str = 'r_gripper_r_finger_joint'
+    NAMES: List[str] = [
+        NAME_HEAD_NOD,
+        NAME_HEAD_PAN,
+        NAME_LEFT_E0,
+        NAME_LEFT_E1,
+        NAME_LEFT_S0,
+        NAME_LEFT_S1,
+        NAME_LEFT_W0,
+        NAME_LEFT_W1,
+        NAME_LEFT_W2,
+        NAME_RIGHT_E0,
+        NAME_RIGHT_E1,
+        NAME_RIGHT_S0,
+        NAME_RIGHT_S1,
+        NAME_RIGHT_W0,
+        NAME_RIGHT_W1,
+        NAME_RIGHT_W2,
+        NAME_TORSO_T0,
+        NAME_LEFT_GRIPPER_LEFT_FINGER,
+        NAME_LEFT_GRIPPER_RIGHT_FINGER,
+        NAME_RIGHT_GRIPPER_LEFT_FINGER,
+        NAME_RIGHT_GRIPPER_RIGHT_FINGER,
+    ]
+
+    # ===========
+    # Constructor
+    def __init__(
+            self,
+            header: 'Header',
+            name: array,
+            position: array,
+            velocity: array,
+            effort: array,
+            skip_validation: bool = False
+    ) -> None:
+        # validate data
+        if not skip_validation:
+            for _str in (
+                    [
+                        self._validate_input(
+                            header,
+                            self.TYPE_HEADER
+                        ),
+                        self._validate_input(
+                            name,
+                            self.TYPE_ARRAY
+                        ),
+                        self._validate_input(
+                            position,
+                            self.TYPE_ARRAY
+                        ),
+                        self._validate_input(
+                            velocity,
+                            self.TYPE_ARRAY
+                        ),
+                        self._validate_input(
+                            effort,
+                            self.TYPE_ARRAY
+                        )
+                    ] + [
+                        self._validate_input(
+                            n,
+                            self.TYPE_STRING,
+                            options = self.NAMES
+                        )
+                        for n in name
+                    ] + [
+                        self._validate_input(
+                            p,
+                            self.TYPE_FLOAT64
+                        )
+                        for p in position
+                    ] + [
+                        self._validate_input(
+                            v,
+                            self.TYPE_FLOAT64
+                        )
+                        for v in velocity
+                    ] + [
+                        self._validate_input(
+                            e,
+                            self.TYPE_FLOAT64
+                        )
+                        for e in effort
+                    ]
+            ):
+                if _str != '':
+                    raise ValueError(
+                        f'ROS2-MSG JointState Construct: {_str}'
+                    )
+                
+        # construct instance
+        super().__init__()
+        self.header = header
+        self.name = name
+        self.position = position
+        self.velocity = velocity
+        self.effort = effort
+
+    # ================
+    # Get Joint Values
+    def get_val(
+            self,
+            joint_name: str
+    ) -> Optional[_JOINT]:
+        '''
+        Get Joint Values
+        -
+        If the joint name is in the data, then returns the position, velocity, 
+        and effort of the joint. Otherwise returns `None`.
+
+        Parameters
+        -
+        - joint_name : `str`
+            - Name of the joint to get the data from.
+
+        Returns
+        -
+        - `_JOINT`
+            - Joint Position.
+            - Joint Velocity.
+            - Joint Effort.
+        - `None`
+            - Returned if the joint is not in the data set.
+        '''
+
+        # validate joint_name
+        if not joint_name in self.NAMES:
+            raise ValueError(
+                f'JointState get_val for invalid joint_name={joint_name}'
+            )
+        
+        # if joint exists in current data-set, get data
+        if joint_name in self.name:
+            _index: int = self.name.index(joint_name)
+            return (
+                self.position[_index],
+                self.velocity[_index],
+                self.effort[_index],
+            )
+        
+        return None
+    
+    # ===============
+    # Get Object Data
+    def _get_data(self, short: bool = False) -> _DATA:
+        if short:
+            return {
+                'time': f'{self.header.stamp.sec}.{self.header.stamp.nanosec}',
+                'joints': len(self.name),
+            }
+        _data = {
+            'header': self.header,
+            'name': self.name,
+            'position': self.position,
+            'velocity': self.velocity,
+            'effort': self.effort,
+        }
+        for joint_name in self.NAMES:
+            _data[f'GET-VAL ({joint_name})'] = self.get_val(joint_name)
+        return _data
+    
+    # ===============
+    # Create from MSG
+    @staticmethod
+    def from_msg(msg: msgJointState) -> 'JointState':
+        return JointState(
+            header = Header.from_msg(msg.header),
+            name = msg.name,
+            position = msg.position,
+            velocity = msg.velocity,
+            effort = msg.effort,
+            skip_validation = True
+        )
+
+    # ==============
+    # Create Message
+    def create_msg(self) -> msgJointState:
+        _msg = msgJointState()
+        _msg.header = self.header
+        _msg.name = self.name
+        _msg.position = self.position
+        _msg.velocity = self.velocity
+        _msg.effort = self.effort
+        return _msg
 
 # ==============
 # NavigatorState

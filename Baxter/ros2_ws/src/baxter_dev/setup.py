@@ -27,6 +27,7 @@ setup(
             'client_stream_image = baxter_dev.clients:stream_image',
             'streamer = baxter_dev.streamer:main',
             'test_gripper = baxter_dev.gripper_test:main',
+            'test_main = baxter_dev.main_test:main',
         ],
     },
 )

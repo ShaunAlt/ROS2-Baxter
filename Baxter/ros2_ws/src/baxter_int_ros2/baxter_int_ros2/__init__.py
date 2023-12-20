@@ -114,8 +114,10 @@ from geometry_msgs.msg import ( # type: ignore
 )
 from sensor_msgs.msg import ( # type: ignore
     Image as msgImage,
+    JointState as msgJointState,
 )
 from std_msgs.msg import ( # type: ignore
+    Float64 as msgFloat64,
     Header as msgHeader,
 )
 
@@ -331,6 +333,10 @@ class ROS2_Node(ROS2_obj, Node):
     - get_logger() : `Logger`
         - Creates a logger which can be used for logging and debugging
             purposes.
+    - log(txt, extra_tabs=0, override_verbosity=False) : `None`
+        - Prints an output to the console with the specified number of extra
+            tabs. Prints the output using the verbosity of the `ROS2_Node`
+            instance.
 
     `ROS2_obj` Methods
     -
@@ -514,6 +520,41 @@ class ROS2_Node(ROS2_obj, Node):
             Logger,
             super().get_logger()
         )
+    
+    # ===
+    # Log
+    def log(
+            self,
+            txt: str,
+            extra_tabs: int = 0,
+            override_verbosity: bool = False
+    ) -> None:
+        '''
+        Log
+        -
+        Prints an output to the console with the specified number of extra
+        tabs. Prints the output using the verbosity of the `ROS2_Node`
+        instance.
+
+        Parameters
+        -
+        - txt : `str`
+            - Text to print in the output.
+        - extra_tabs : `int`
+            - Number of extra tabs to include in the print statement.
+        - override_verbosity : `bool`
+            - Whether or not to override the verbosity value and display the
+                message regardless. Defaults to `False`. 
+
+        Returns
+        -
+        None
+        '''
+
+        if self._V or override_verbosity:
+            _t = '\t' * (self._verbose + extra_tabs)
+            txt = str(txt).replace('\n', f'\n\t{_t}')
+            print(f'{_t}{txt}')
 
 
 # =============================================================================
@@ -556,11 +597,14 @@ _MSG = Union[
 
     # - sensor_msgs
     msgImage,
+    msgJointState,
 
     # - std_msgs
+    msgFloat64,
     msgHeader,
 ]
 _TIMER = Tuple[float, Callable[[Node], None]]
+_JOINT = Tuple[float, float, float]
 class Settings():
     CHECK_VERSION = True
     HEAD_PAN_ANGLE_TOLERANCE: float = 0.1396263401
@@ -741,6 +785,23 @@ class Topics():
             SET_STATE: str = 'rsdk/set_state'
             SUFFIX: str = '_gripper'
 
+    class Limb():
+        ''' Limb Topics. '''
+        LEFT: str = 'left'
+        RIGHT: str = 'right'
+        ALL: List[str] = [
+            LEFT,
+            RIGHT,
+        ]
+
+        ''' Sub-Topics. '''
+        _PREFIX: str = 'robot/limb'
+        _SET_SPEED_RATIO: str = 'set_speed_ratio'
+        _SET_JOINT_CMD: str = 'joint_command'
+        _SET_JOINT_CMD_TIMEOUT: str = 'joint_command_timeout'
+        _GET_ENDPOINT: str = 'endpoint_state'
+        _GET_JOINT_VALS: str = 'robot/joint_states'
+
 # =============================================================================
 # Sub-Module Imports
 # =============================================================================
@@ -770,9 +831,11 @@ from .msgs import (
     HeadState as MSG_HeadState,
     Image as MSG_Image,
     JointCommand as MSG_JointCommand,
+    JointState as MSG_JointState,
     NavigatorState as MSG_NavigatorState,
     NavigatorStates as MSG_NavigatorStates,
     # ROS2 messages
+    Float64 as MSG_Float64,
     Header as MSG_Header,
     Point as MSG_Point,
     Pose as MSG_Pose,
@@ -802,6 +865,9 @@ from .digital_io import (
 )
 from .gripper import (
     Gripper,
+)
+from .limb import (
+    Limb,
 )
 
 # =============================================================================
