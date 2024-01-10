@@ -1,0 +1,11 @@
+moveit_setup_assistant_config:
+  URDF:
+    package: baxter_description
+    relative_path: urdf/baxter.urdf
+    xacro_args: ""
+  SRDF:
+    relative_path: config/baxter.srdf
+  CONFIG:
+    author_name: Shaun Altmann
+    author_email: saltmann@deakin.edu.au
+    generated_timestamp: 1704861661
