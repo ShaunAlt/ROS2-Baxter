@@ -30,6 +30,9 @@ from typing import (
     Union,
 )
 
+# used for threading
+import threading
+
 # used for date/time
 from datetime import datetime
 
@@ -219,12 +222,12 @@ class Robot():
                     _p,
                     threshold = Robot.JOINT_TOLERANCE_SMALL
                 )
+            print(f'Finished Moving Limb {side}')
 
         print('Moving Left Arm.')
-        move_limb('l')
+        threading.Thread(target=move_limb, args=('l', )).start()
         print('Moving Right Arm.')
-        move_limb('r')
-        print('Finished Planned Movement.')
+        threading.Thread(target=move_limb, args=('r', )).start()
         
 
 
