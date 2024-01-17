@@ -178,6 +178,9 @@ class JointTrajectory():
 class Robot():
     ''' Baxter Robot Definition. '''
 
+    JOINT_TOLERANCE_BIG: float = 0.25 # 0.2
+    JOINT_TOLERANCE_SMALL: float = 0.008726646
+
     # ===========
     # Constructor
     def __init__(self):
@@ -201,20 +204,27 @@ class Robot():
         trajectory = JointTrajectory(msg)
         print(f'Read Trajectory: {len(trajectory.joint_cmds)} Points')
 
-        # go to each of the required positions
-        def move_l():
-            ''' Move Left Limb. '''
-            for _point in trajectory.get_limb_trajectory('l'):
-                self.limb_l.move_to_joint_positions(_point)
-        def move_r():
-            ''' Move Right Limb. '''
-            for _point in trajectory.get_limb_trajectory('r'):
-                self.limb_r.move_to_joint_positions(_point)
+        # # go to each of the required positions
+        def move_limb(side: str):
+            ''' Move Limb. side = {l, r}. '''
+            pts: List[Dict[str, float]] = trajectory.get_limb_trajectory(side)
+            limb: Limb = {'l': self.limb_l, 'r': self.limb_r}[side]
+            for _p in pts[:-1]:
+                limb.move_to_joint_positions(
+                    _p,
+                    threshold = Robot.JOINT_TOLERANCE_BIG
+                )
+            for _p in pts[-1:]:
+                limb.move_to_joint_positions(
+                    _p,
+                    threshold = Robot.JOINT_TOLERANCE_SMALL
+                )
 
         print('Moving Left Arm.')
-        move_l()
+        move_limb('l')
         print('Moving Right Arm.')
-        move_r()
+        move_limb('r')
+        print('Finished Planned Movement.')
         
 
 
