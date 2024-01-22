@@ -11,6 +11,8 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   moveit_msgs
+  moveit_commander
+  geometry_msgs
 )
 
 ## System dependencies are found with CMake's conventions
