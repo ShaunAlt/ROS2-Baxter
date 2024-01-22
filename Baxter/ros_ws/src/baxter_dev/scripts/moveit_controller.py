@@ -168,8 +168,8 @@ class JointTrajectory():
             for j in range(len(_jt.joint_names)):
                 _joint_cmd[_jt.joint_names[j]] = (
                     _jt.points[i].positions[j],
-                    _jt.points[i].velocities[j],
-                    _jt.points[i].accelerations[j],
+                    0, #_jt.points[i].velocities[j],
+                    0, #_jt.points[i].accelerations[j],
                 )
             self.joint_cmds.append(_joint_cmd)
 
