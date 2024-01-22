@@ -243,20 +243,83 @@ class Robot():
         )
 
         # DigitalIO buttons
+        # left buttons
+        self.btn_left_back = DigitalIO('left_button_back')
+        self.btn_left_back.state_changed.connect(
+            self._move_to_pose_both_cartesian
+        )
         self.btn_left_circle = DigitalIO('left_lower_button')
         self.btn_left_circle.state_changed.connect(self._save_pose_left)
         self.btn_left_dash = DigitalIO('left_upper_button')
         self.btn_left_dash.state_changed.connect(self._move_to_pose_left)
+        self.btn_left_ok = DigitalIO('left_button_ok')
+        self.btn_left_ok.state_changed.connect(self._move_to_pose_both_normal)
+        self.btn_left_show = DigitalIO('left_button_show')
+        self.btn_left_show.state_changed.connect(self._move_to_pose_both_skip)
+        # right buttons
+        self.btn_right_back = DigitalIO('right_button_back')
+        self.btn_right_back.state_changed.connect(
+            self._move_to_pose_both_cartesian
+        )
         self.btn_right_circle = DigitalIO('right_lower_button')
         self.btn_right_circle.state_changed.connect(self._save_pose_right)
         self.btn_right_dash = DigitalIO('right_upper_button')
         self.btn_right_dash.state_changed.connect(self._move_to_pose_right)
+        self.btn_right_ok = DigitalIO('right_button_ok')
+        self.btn_right_ok.state_changed.connect(self._move_to_pose_both_normal)
+        self.btn_right_show = DigitalIO('right_button_show')
+        self.btn_right_show.state_changed.connect(self._move_to_pose_both_skip)
 
         # saved poses
         self.pose_left: Optional[Pose] = None
         self.pose_right: Optional[Pose] = None
 
-        print('Finished Initialization')
+        # print description
+        print(
+            'Initialization Completed: MoveIT Controllers Ready.\n\t' \
+                + '- Press the Circle button on the cuff of a limb to save' \
+                + ' the Pose of that limb.\n\t- Press the Dash button on' \
+                + ' the cuff of a limb to move only that arm to the saved ' \
+                + 'Pose. \n\t- Press the Back button on either forearm to ' \
+                + 'move both arms Cartesian to their saved Poses. \n\t- ' \
+                + 'Press the OK button on either forearm to move both arms ' \
+                + 'to their saved Poses normally. \n\t- Press the Show ' \
+                + 'button on either forearm to move both arms to their saved' \
+                + ' Poses skipping the path planning and moving to the final' \
+                + ' Pose immediately.'
+        )
+
+    # =============================================
+    # Move to Pose Callback - Both - Cartesian Path
+    def _move_to_pose_both_cartesian(self, val: bool) -> None:
+        ''' Move to Pose Callback - Both Arms - Cartesian Path. '''
+        if val:
+            self.move_limbs(
+                goal_l = self.pose_left,
+                goal_r = self.pose_right,
+                cartesian = True
+            )
+
+    # ==========================================
+    # Move to Pose Callback - Both - Normal Path
+    def _move_to_pose_both_normal(self, val: bool) -> None:
+        ''' Move to Pose Callback - Both Arms - Normal Path. '''
+        if val:
+            self.move_limbs(
+                goal_l = self.pose_left,
+                goal_r = self.pose_right
+            )
+
+    # ========================================
+    # Move to Pose Callback - Both - Skip Path
+    def _move_to_pose_both_skip(self, val: bool) -> None:
+        ''' Move to Pose Callback - Both Arms - Skip Path. '''
+        if val:
+            self.move_limbs(
+                goal_l = self.pose_left,
+                goal_r = self.pose_right,
+                skip_to_end = True
+            )
 
     # ============================
     # Move to Pose Callback - Left
@@ -264,9 +327,7 @@ class Robot():
         ''' Move to Pose Callback - Left Limb. '''
         if val: 
             self.move_limbs(
-                goal_l = self.pose_left,
-                cartesian = True
-                # skip_to_end = True
+                goal_l = self.pose_left
             )
 
     # =============================
@@ -275,9 +336,7 @@ class Robot():
         ''' Move to Pose Callback - Right Limb. '''
         if val: 
             self.move_limbs(
-                goal_r = self.pose_right,
-                cartesian = True
-                # skip_to_end = True
+                goal_r = self.pose_right
             )
         
     # ==============
