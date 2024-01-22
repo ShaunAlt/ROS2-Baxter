@@ -1,0 +1,92 @@
+position_controller_left:
+  type: position_controllers/JointTrajectoryController
+  joints:
+    - left_s0
+    - left_s1
+    - left_e0
+    - left_e1
+    - left_w0
+    - left_w1
+    - left_w2
+  gains:
+    left_s0:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
+    left_s1:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
+    left_e0:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
+    left_e1:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
+    left_w0:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
+    left_w1:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
+    left_w2:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
+position_controller_right:
+  type: position_controllers/JointTrajectoryController
+  joints:
+    - right_s0
+    - right_s1
+    - right_e0
+    - right_e1
+    - right_w0
+    - right_w1
+    - right_w2
+  gains:
+    right_s0:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
+    right_s1:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
+    right_e0:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
+    right_e1:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
+    right_w0:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
+    right_w1:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
+    right_w2:
+      p: 100
+      d: 1
+      i: 1
+      i_clamp: 1
