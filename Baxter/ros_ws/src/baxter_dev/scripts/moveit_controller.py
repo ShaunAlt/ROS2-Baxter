@@ -73,6 +73,12 @@ else:
 
 
 # =============================================================================
+# Type Definitions
+# =============================================================================
+_PLAN = List[Dict[str, float]]
+
+
+# =============================================================================
 # Joint Trajectory Object Definitions
 # =============================================================================
 class Header():
@@ -169,7 +175,7 @@ class JointTrajectory():
 
     # ===================
     # Get Limb Trajectory
-    def get_limb_trajectory(self, side: str) -> List[Dict[str, float]]:
+    def get_limb_trajectory(self, side: str) -> _PLAN:
         ''' Get Limb Trajectory. side = {'l', 'r'}. '''
 
         # left limbs
@@ -383,7 +389,7 @@ class Robot():
             goal: Pose,
             cartesian: bool = False,
             skip_to_end: bool = False
-    ) -> List[Dict[str, float]]:
+    ) -> _PLAN:
         '''
         MoveIT Planner
         -
@@ -411,7 +417,7 @@ class Robot():
 
         Returns
         -
-        - list[dict[str, float]]
+        - _PLAN
             - List of Points
                 - Dict containing the joint name and joint position.
         '''
@@ -431,11 +437,12 @@ class Robot():
         
         # set move group
         move_group = {'l': self.moveit_group_l, 'r': self.moveit_group_r}[side]
+        limb = {'l': self.limb_l, 'r': self.limb_r}[side]
 
         # create plan
         if cartesian:
             (plan, _) = move_group.compute_cartesian_path(
-                [move_group.get_current_pose().pose, goal],
+                [self.get_limb_pose(limb), goal],
                 0.01,
                 0
             )
@@ -483,20 +490,7 @@ class Robot():
             )
         
         _limb = {'left': self.limb_l, 'right': self.limb_r}[side]
-        _endpoint_data = _limb._cartesian_pose
-        _pose = Pose(
-            position = Point(
-                x = _endpoint_data['position'][0],
-                y = _endpoint_data['position'][1],
-                z = _endpoint_data['position'][2]
-            ),
-            orientation = Quaternion(
-                x = _endpoint_data['orientation'][0],
-                y = _endpoint_data['orientation'][1],
-                z = _endpoint_data['orientation'][2],
-                w = _endpoint_data['orientation'][3]
-            )
-        )
+        _pose = self.get_limb_pose(_limb)
 
         if side == 'left':
             self.pose_left = _pose
@@ -529,7 +523,7 @@ class Robot():
         # # go to each of the required positions
         def move_limb(side: str):
             ''' Move Limb. side = {l, r}. '''
-            pts: List[Dict[str, float]] = trajectory.get_limb_trajectory(side)
+            pts: _PLAN = trajectory.get_limb_trajectory(side)
             limb: Limb = {'l': self.limb_l, 'r': self.limb_r}[side]
             for _p in pts[:-1]:
                 limb.move_to_joint_positions(
@@ -547,6 +541,39 @@ class Robot():
         threading.Thread(target=move_limb, args=('l', )).start()
         print('Moving Right Arm.')
         threading.Thread(target=move_limb, args=('r', )).start()
+
+    # =============
+    # Get Limb Pose
+    def get_limb_pose(self, limb: Limb) -> Pose:
+        '''
+        Get Limb Pose
+        -
+        Gets the current pose of a particular `Limb`.
+
+        Parameters
+        -
+        - limb : `Limb`
+            - `Limb` to get the current `Pose` from.
+
+        Returns
+        -
+        `Pose`
+            - `Pose` of the parsed `Limb`.
+        '''
+
+        return Pose(
+            position = Point(
+                x = limb._cartesian_pose['position'][0],
+                y = limb._cartesian_pose['position'][1],
+                z = limb._cartesian_pose['position'][2]
+            ),
+            orientation = Quaternion(
+                x = limb._cartesian_pose['orientation'][0],
+                y = limb._cartesian_pose['orientation'][1],
+                z = limb._cartesian_pose['orientation'][2],
+                w = limb._cartesian_pose['orientation'][3]
+            )
+        )
 
     # ================
     # Move Robot Limbs
@@ -586,27 +613,27 @@ class Robot():
         None
         '''
 
+        # state moving is occurring - stops other commands from interferring
         self.moving = True
 
-        # create left path plan
-        def move(side: str) -> None:
-            ''' Move Limb. side = {l, r}. '''
-            print(f'Moving Limb {side}')
+        # create plans
+        plan_l: Optional[_PLAN] = None
+        plan_r: Optional[_PLAN] = None
+        if goal_l is not None: 
+            plan_l = self._plan('l', goal_l, cartesian, skip_to_end)
+        if goal_r is not None:
+            plan_r = self._plan('r', goal_r, cartesian, skip_to_end)
 
-            # get goal
-            goal: Optional[Pose] = {'l': goal_l, 'r': goal_r}[side]
-            if goal is None: return None
+        # create movement function
+        def _move(side: str, plan: Optional[_PLAN]) -> None:
+            ''' Internal movement function. '''
 
-            # create limb + plan
-            limb: Limb = {'l': self.limb_l, 'r': self.limb_r}[side]
-            plan: List[Dict[str, float]] = self._plan(
-                side,
-                goal,
-                cartesian = cartesian,
-                skip_to_end = skip_to_end
-            )
-
-            # move joints
+            if plan is None:
+                print(f'No Move Plan for "{side}".')
+                return None
+            
+            limb = {'L': self.limb_l, 'R': self.limb_r}[side]
+            print(f'Moving for Plan "{side}"')
             for _p in plan[:-1]:
                 limb.move_to_joint_positions(
                     _p,
@@ -617,14 +644,17 @@ class Robot():
                     _p,
                     threshold = Robot.JOINT_TOLERANCE_SMALL
                 )
-            print(f'Finished Moving Limb {side}')
+            print(f'Finishing Moving for Plan "{side}" ({len(plan)} steps)')
 
+        # create threads
         _threads = [
-            threading.Thread(target=move, args=('l',)),
-            threading.Thread(target=move, args=('r',)),
+            threading.Thread(target=_move, args=('L', plan_l,)),
+            threading.Thread(target=_move, args=('R', plan_r,)),
         ]
         for _t in _threads: _t.start()
         for _t in _threads: _t.join()
+
+        # end moving block
         self.moving = False
 
     # ===============================
