@@ -274,6 +274,9 @@ class Robot():
         self.pose_left: Optional[Pose] = None
         self.pose_right: Optional[Pose] = None
 
+        # moving flag
+        self.moving: bool = False
+
         # print description
         print(
             'Initialization Completed: MoveIT Controllers Ready.\n\t' \
@@ -293,10 +296,19 @@ class Robot():
     # Move to Pose Callback - Both - Cartesian Path
     def _move_to_pose_both_cartesian(self, val: bool) -> None:
         ''' Move to Pose Callback - Both Arms - Cartesian Path. '''
-        if val:
+        if (
+                (not val)
+                and (not self.moving)
+        ):
             self.move_limbs(
-                goal_l = self.pose_left,
-                goal_r = self.pose_right,
+                goal_l = {
+                    True: None,
+                    False: self.pose_left
+                }[self.btn_right_dash.state],
+                goal_r = {
+                    True: None,
+                    False: self.pose_right
+                }[self.btn_left_dash.state],
                 cartesian = True
             )
 
@@ -304,20 +316,38 @@ class Robot():
     # Move to Pose Callback - Both - Normal Path
     def _move_to_pose_both_normal(self, val: bool) -> None:
         ''' Move to Pose Callback - Both Arms - Normal Path. '''
-        if val:
+        if (
+                (not val)
+                and (not self.moving)
+        ):
             self.move_limbs(
-                goal_l = self.pose_left,
-                goal_r = self.pose_right
+                goal_l = {
+                    True: None,
+                    False: self.pose_left
+                }[self.btn_right_dash.state],
+                goal_r = {
+                    True: None,
+                    False: self.pose_right
+                }[self.btn_left_dash.state]
             )
 
     # ========================================
     # Move to Pose Callback - Both - Skip Path
     def _move_to_pose_both_skip(self, val: bool) -> None:
         ''' Move to Pose Callback - Both Arms - Skip Path. '''
-        if val:
+        if (
+                (not val)
+                and (not self.moving)
+        ):
             self.move_limbs(
-                goal_l = self.pose_left,
-                goal_r = self.pose_right,
+                goal_l = {
+                    True: None,
+                    False: self.pose_left
+                }[self.btn_right_dash.state],
+                goal_r = {
+                    True: None,
+                    False: self.pose_right
+                }[self.btn_left_dash.state],
                 skip_to_end = True
             )
 
@@ -325,7 +355,10 @@ class Robot():
     # Move to Pose Callback - Left
     def _move_to_pose_left(self, val: bool) -> None:
         ''' Move to Pose Callback - Left Limb. '''
-        if val: 
+        if (
+                (not val)
+                and (not self.moving)
+        ):
             self.move_limbs(
                 goal_l = self.pose_left
             )
@@ -334,7 +367,10 @@ class Robot():
     # Move to Pose Callback - Right
     def _move_to_pose_right(self, val: bool) -> None:
         ''' Move to Pose Callback - Right Limb. '''
-        if val: 
+        if (
+                (not val)
+                and (not self.moving)
+        ):
             self.move_limbs(
                 goal_r = self.pose_right
             )
@@ -550,6 +586,8 @@ class Robot():
         None
         '''
 
+        self.moving = True
+
         # create left path plan
         def move(side: str) -> None:
             ''' Move Limb. side = {l, r}. '''
@@ -558,10 +596,6 @@ class Robot():
             # get goal
             goal: Optional[Pose] = {'l': goal_l, 'r': goal_r}[side]
             if goal is None: return None
-                # goal = {
-                #     'l': self.moveit_group_l,
-                #     'r': self.moveit_group_r,
-                # }[side].get_current_pose().pose
 
             # create limb + plan
             limb: Limb = {'l': self.limb_l, 'r': self.limb_r}[side]
@@ -585,8 +619,13 @@ class Robot():
                 )
             print(f'Finished Moving Limb {side}')
 
-        threading.Thread(target=move, args=('l',)).start()
-        threading.Thread(target=move, args=('r',)).start()
+        _threads = [
+            threading.Thread(target=move, args=('l',)),
+            threading.Thread(target=move, args=('r',)),
+        ]
+        for _t in _threads: _t.start()
+        for _t in _threads: _t.join()
+        self.moving = False
 
     # ===============================
     # Publisher - MoveIT Path Planner
