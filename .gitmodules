@@ -1,0 +1,35 @@
+[submodule "baxter_common"]
+    path = 'Baxter/moveit_ws/src/baxter_common'
+    url = https://github.com/RethinkRobotics/baxter_common.git
+    branch = master
+
+[submodule "baxter_common_ros2"]
+    path = 'Baxter/ros2_ws/src/baxter_common_ros2'
+    url = https://github.com/CentraleNantesRobotics/baxter_common_ros2.git
+    branch = master
+
+[submodule "baxter_examples"]
+    path = 'Baxter/ros_ws/src/baxter_examples'
+    url = https://github.com/RethinkRobotics/baxter_examples.git
+    branch = master
+
+[submodule "baxter_legacy"]
+    path = 'Baxter/ros_ws/src/baxter_legacy'
+    url = https://github.com/CentraleNantesRobotics/baxter_legacy.git
+    branch = main
+
+[submodule "moveit_robots"]
+    path = 'Baxter/moveit_ws/src/moveit_robots'
+    url = https://github.com/ros-planning/moveit_robots.git
+    branch = kinetic-devel
+
+[submodule "moveit_tutorials"]
+    path = 'Baxter/moveit_ws/src/moveit_tutorials'
+    url = https://github.com/ros-planning/moveit_tutorials.git
+    branch = master
+
+[submodule "panda_moveit_config"]
+    path = 'Baxter/moveit_ws/src/panda_moveit_config'
+    url = https://github.com/ros-planning/panda_moveit_config.git
+    branch = noetic-devel
+
