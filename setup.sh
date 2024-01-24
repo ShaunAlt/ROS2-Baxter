@@ -16,6 +16,8 @@ alias S2='sed "s/^/\t\t| - /"'
 alias S3='sed "s/^/\t\t\t| - /"'
 alias S4='sed "s/^/\t\t\t\t| - /"'
 alias S5='sed "s/^/\t\t\t\t\t| - /"'
+rosdep_udpate() { rosdep update --rosdistro $1; }
+rosdep_install() { rosdep install -r --from-paths . --ignore-src --rosdistro $1 -y; }
 DIR=$(pwd)
 
 # Print start of Commands
@@ -62,13 +64,6 @@ create_aliases() {
     )
     echo "Setting Aliases" | S1
     printf "%s\n" "${ALIASES[@]}" >> ~/.bash_aliases
-    echo "Defining Functions" | S1
-    FUNCTIONS=(
-        "rosdep_udpate() { rosdep update --rosdistro \$1; }"
-        "rosdep_install() { rosdep install -r --from-paths . --ignore-src --rosdistro \$1 -y; }"
-    )
-    echo "Setting Functions" | S1
-    printf "%s\n" "${FUNCTIONS[@]}" >> ~/.bash_aliases
     echo "Sourcing Aliases" | S1
     source ~/.bash_aliases
 }
@@ -124,7 +119,7 @@ build_workspaces() {
         rm -rf baxter_common_ros2
         echo "Git Cloning New" | S4
         git clone https://github.com/CentraleNantesRobotics/baxter_common_ros2.git | S5
-        echo "Removing Redundant Baxter Bridge"
+        echo "Removing Redundant Baxter Bridge" | S4
         rm -rf baxter_common_ros2/baxter_bridge
         echo "Installing Galactic ROSDEPs" | S3
         rosdep_install galactic | S4
