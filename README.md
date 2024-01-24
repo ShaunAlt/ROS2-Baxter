@@ -6,6 +6,8 @@ Written by Shaun Altmann
 2. `git clone https://github.com/ShaunAlt/ROS2-Baxter.git`
 3. `cd ROS2-Baxter\`
 4. `bash setup.sh` (May take a couple of minutes).
+5. Go into the `ros_ws` and edit the `baxter.sh` file on line 27, changing `your_hostname` to the name of the machine (e.g. `baxter-Alienware-Area-51-R5`). PLEASE NOTE this is
+       the name of the machine, not the username.
 
 ## Aliases
 The following aliases are defined in the `setup.sh` shell script:
