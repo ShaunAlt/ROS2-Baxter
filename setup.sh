@@ -16,7 +16,7 @@ alias S2='sed "s/^/\t\t| - /"'
 alias S3='sed "s/^/\t\t\t| - /"'
 alias S4='sed "s/^/\t\t\t\t| - /"'
 alias S5='sed "s/^/\t\t\t\t\t| - /"'
-rosdep_udpate() { rosdep update --rosdistro $1; }
+rosdep_update() { rosdep update --rosdistro $1; }
 rosdep_install() { rosdep install -r --from-paths . --ignore-src --rosdistro $1 -y; }
 DIR=$(pwd)
 
@@ -71,13 +71,14 @@ create_aliases
 
 # Clone the Submodules
 echo "| - Cloning Submodules"
-git submodule update --force --recursive --init --remote | S1
+sudo git submodule update --force --recursive --init --remote | S1
 
 # Build Workspaces
 build_workspaces() {
     build_ros1_workspaces() {
         echo "Sourcing ROS1 Noetic" | S2
         src_noetic | S3
+        env | grep ROS_ | S3
         echo "Updating Noetic ROSDEP" | S2
         rosdep_update noetic | S3
 
@@ -106,6 +107,7 @@ build_workspaces() {
     build_ros2_workspaces() {
         echo "Sourcing ROS2 Galactic" | S2
         src_galactic | S3
+        env | grep ROS_ | S3
         echo "Updating Galactic ROSDEP" | S2
         rosdep_update galactic | S3
 
