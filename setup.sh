@@ -68,6 +68,7 @@ create_aliases() {
     source ~/.bash_aliases
 }
 create_aliases
+alias
 
 # Clone the Submodules
 echo "| - Cloning Submodules"
@@ -77,7 +78,7 @@ sudo git submodule update --force --recursive --init --remote | S1
 build_workspaces() {
     build_ros1_workspaces() {
         echo "Sourcing ROS1 Noetic" | S2
-        source /opt/ros/noetic/setup.bash | S3
+        src_noetic > /dev/null 2>&1
         env | grep ROS_ | S3
         echo "Updating Noetic ROSDEP" | S2
         rosdep_update noetic | S3
@@ -106,7 +107,7 @@ build_workspaces() {
     }
     build_ros2_workspaces() {
         echo "Sourcing ROS2 Galactic" | S2
-        source /opt/ros/galactic/setup.bash | S3
+        src_galactic > /dev/null 2>&1
         env | grep ROS_ | S3
         echo "Updating Galactic ROSDEP" | S2
         rosdep_update galactic | S3
