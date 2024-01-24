@@ -66,13 +66,14 @@ create_aliases() {
     printf "%s\n" "${ALIASES[@]}" >> ~/.bash_aliases
     echo "Sourcing Aliases" | S1
     source ~/.bash_aliases
+    echo "All Aliases" | S1
+    alias | S2
 }
 create_aliases
-alias
 
 # Clone the Submodules
 echo "| - Cloning Submodules"
-sudo git submodule update --force --recursive --init --remote | S1
+sudo git submodule update --force --recursive --init --remote 2>&1 | S1
 
 # Build Workspaces
 build_workspaces() {
@@ -92,7 +93,7 @@ build_workspaces() {
         rosdep_install noetic | S4
         cd ..
         echo "Building Workspace" | S3
-        catkin build | S4
+        catkin build 2>&1 | S4
 
         # ROS1
         echo "Building ROS1 Workspace" | S2
@@ -103,7 +104,7 @@ build_workspaces() {
         rosdep_install noetic | S4
         cd ..
         echo "Building Workspace" | S3
-        catkin_make | S4
+        catkin_make 2>&1 | S4
     }
     build_ros2_workspaces() {
         echo "Sourcing ROS2 Galactic" | S2
@@ -121,14 +122,14 @@ build_workspaces() {
         echo "Deleting Original" | S4
         rm -rf baxter_common_ros2
         echo "Git Cloning New" | S4
-        git clone https://github.com/CentraleNantesRobotics/baxter_common_ros2.git | S5
+        git clone https://github.com/CentraleNantesRobotics/baxter_common_ros2.git 2>&1 | S5
         echo "Removing Redundant Baxter Bridge" | S4
         rm -rf baxter_common_ros2/baxter_bridge
         echo "Installing Galactic ROSDEPs" | S3
         rosdep_install galactic | S4
         cd ..
         echo "Building Workspace" | S3
-        colcon build | S4
+        colcon build 2>&1 | S4
     }
     echo "| - Building Workspaces"
     echo "Building Noetic Workspaces" | S1
