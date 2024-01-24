@@ -19,23 +19,24 @@ alias S5='sed "s/^/\t\t\t\t\t| - /"'
 DIR=$(pwd)
 
 # Print start of Commands
-echo "Setting up ROS2-Baxter Git Repo"
+shopt -s expand_aliases
+sudo echo "Setting up ROS2-Baxter Git Repo"
 
 # Installing Dependencies
 install_dependencies() {
     echo "| - Installing Dependencies"
     echo "Python3 Catkin Tools" | S1
-    sudo apt install python3-catkin-tools | S2
+    sudo apt-get install python3-catkin-tools | S2
     echo "ROS1 Noetic MoveIT" | S1
-    sudo apt install ros-noetic-moveit | S2
+    sudo apt-get install ros-noetic-moveit | S2
     echo "ROS1 Noetic Catkin" | S1
-    sudo apt install ros-noetic-catkin | S2
+    sudo apt-get install ros-noetic-catkin | S2
     echo "ROS2 Galactic Desktop" | S1
-    sudo apt install ros-galactic-desktop | S2
+    sudo apt-get install ros-galactic-desktop | S2
     echo "ROS2 Galactic ROS Base" | S1
-    sudo apt install ros-galactic-ros-base | S2
+    sudo apt-get install ros-galactic-ros-base | S2
     echo "ROS Developer Tools" | S1
-    sudo apt install ros-dev-tools | S2
+    sudo apt-get install ros-dev-tools | S2
 }
 install_dependencies
 
@@ -44,20 +45,20 @@ create_aliases() {
     echo "| - Creating Aliases"
     echo "Defining Aliases" | S1
     ALIASES=(
-        "baxter_bridge='ros2_ws && ./bridge.sh"
-        "baxter_connect='baxter_init && baxter_bridge'"
-        "baxter_init='ros_ws && ./init.sh'"
-        "baxter_ping='ping 011312P0012.local'"
-        "cd_moveit='cd ${DIR}/Baxter/moveit_ws'"
-        "cd_ros1='cd ${DIR}/Baxter/ros_ws'"
-        "cd_ros2='cd ${DIR}/Baxter/ros2_ws'"
-        "src_galactic='source /opt/ros/galactic/setup.bash'"
-        "src_noetic='source /opt/ros/noetic/setup.bash'"
-        "src_ws1='source devel/setup.bash'"
-        "src_ws2='source install/setup.bash'"
-        "moveit_ws='cd_moveit && src_ws1'"
-        "ros_ws='cd_ros1 && src_ws1'"
-        "ros2_ws='cd_ros2 && src_ws2'"
+        "alias baxter_bridge='ros2_ws && ./bridge.sh'"
+        "alias baxter_connect='baxter_init && baxter_bridge'"
+        "alias baxter_init='ros_ws && ./init.sh'"
+        "alias baxter_ping='ping 011312P0012.local'"
+        "alias cd_moveit='cd ${DIR}/Baxter/moveit_ws'"
+        "alias cd_ros1='cd ${DIR}/Baxter/ros_ws'"
+        "alias cd_ros2='cd ${DIR}/Baxter/ros2_ws'"
+        "alias src_galactic='source /opt/ros/galactic/setup.bash'"
+        "alias src_noetic='source /opt/ros/noetic/setup.bash'"
+        "alias src_ws1='source devel/setup.bash'"
+        "alias src_ws2='source install/setup.bash'"
+        "alias moveit_ws='cd_moveit && src_ws1'"
+        "alias ros_ws='cd_ros1 && src_ws1'"
+        "alias ros2_ws='cd_ros2 && src_ws2'"
     )
     echo "Setting Aliases" | S1
     printf "%s\n" "${ALIASES[@]}" >> ~/.bash_aliases
