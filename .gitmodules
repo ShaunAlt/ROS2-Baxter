@@ -3,11 +3,6 @@
     url = https://github.com/RethinkRobotics/baxter_common.git
     branch = master
 
-[submodule "Baxter/ros2_ws/src/baxter_common_ros2"]
-    path = Baxter/ros2_ws/src/baxter_common_ros2
-    url = https://github.com/CentraleNantesRobotics/baxter_common_ros2.git
-    branch = master
-
 [submodule "Baxter/ros_ws/src/baxter_examples"]
     path = Baxter/ros_ws/src/baxter_examples
     url = https://github.com/RethinkRobotics/baxter_examples.git
