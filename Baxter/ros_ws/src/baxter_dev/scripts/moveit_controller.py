@@ -52,6 +52,12 @@ from geometry_msgs.msg import ( # type: ignore
     Quaternion,
 )
 
+# ROS2 Message
+from baxter_interface_msgs.msg import (
+    EndpointTarget,
+    EndpointTargets,
+)
+
 # MoveIT Commander
 import moveit_commander # type: ignore
 
@@ -203,6 +209,139 @@ class JointTrajectory():
         # invalid
         raise ValueError(f'Get Limb Trajectory: side = {repr(side)}')
 
+class MSG_EndpointTarget():
+    '''
+    Endpoint Target Message Object
+    -
+    Contains the data for the `EndpointTarget` of a particular limb.
+
+    Attributes
+    -
+    - pose : `Pose`
+        - Target `Pose` of the limb.
+    - flag_cartesian : `bool`
+        - Whether or not to use the cartesian flag for path planning.
+    - flag_skip : `bool`
+        - Whether or not to use the skip flag for path planning.
+    '''
+
+    # ============
+    # Construction
+    def __init__(self, msg: EndpointTarget) -> None:
+        '''
+        `EndpointTarget` Message Object Constructor
+        -
+        Creates a `MSG_EndpointTarget` object from a message.
+
+        Parameters
+        -
+        - msg : `EndpointTarget`
+            - Creates message from `EndpointTarget` object.
+
+        Returns
+        -
+        None
+        '''
+
+        self.pose: Pose = msg.pose
+        self.flag_cartesian: bool = msg.mode == EndpointTarget.MODE_CARTESIAN
+        self.flag_skip: bool = msg.mode == EndpointTarget.MODE_SKIP
+        self.flag_normal: bool = msg.mode == EndpointTarget.MODE_NORMAL
+
+    # ==========================
+    # Long String Representation
+    def __repr__(self) -> str:
+        return (
+            f'<MSG_EndpointTarget>\n\tpose = {self.pose}\n\tcartesian = ' \
+                + f'{self.flag_cartesian}\n\tnormal = {self.flag_normal}' \
+                + f'\n\tskip = {self.flag_skip}\n</MSG_EndpointTarget>'
+        )
+    
+    # ===========================
+    # Short String Representation
+    def __str__(self) -> str:
+        mode_str: str = {
+            (True, False, False): 'Cartesian',
+            (False, True, False): 'Normal',
+            (False, False, True): 'Skip',
+        }[(self.flag_cartesian, self.flag_normal, self.flag_skip)]
+        pose_str: str = (
+            f'(({self.pose.position.x}, {self.pose.position.y}, ' \
+                + f'{self.pose.position.z}), ({self.pose.orientation.x}, ' \
+                + f'{self.pose.orientation.y}, {self.pose.orientation.z}, ' \
+                + f'{self.pose.orientation.w}))'
+        )
+        return (
+            f'<MSG_EndpointTarget mode={mode_str}, pose={pose_str} />'
+        )
+
+class MSG_EndpointTargets():
+    '''
+    Endpoint Targets Message Object
+    -
+    Contains all of the data from a particular `Endpoint_Targets` message.
+
+    Attributes
+    -
+    - target_l : `MSG_EndpointTarget | None`
+        - Endpoint target of the left limb, if set.
+    - target_r : `MSG_EndpointTarget | None`
+        - Endpoint target of the right limb, if set.
+    '''
+
+    # ============
+    # Construction
+    def __init__(self, msg: EndpointTarget) -> None:
+        '''
+        EndpointTargets Constructor
+        -
+        Creates an `MSG_EndpointTargets` custom object from the original
+        message data.
+
+        Parameters
+        -
+        - msg : `EndpointTarget`
+            - Original message data.
+
+        Returns
+        -
+        None
+        '''
+
+        self.target_l: Optional[MSG_EndpointTarget] = None
+        self.target_r: Optional[MSG_EndpointTarget] = None
+
+        if EndpointTargets.LIMB_L in msg.limbs:
+            self.target_l = MSG_EndpointTarget(
+                msg.targets[
+                    msg.limbs.index(EndpointTargets.LIMB_L)
+                ]
+            )
+        if EndpointTargets.LIMB_R in msg.limbs:
+            self.target_r = MSG_EndpointTarget(
+                msg.targets[
+                    msg.limbs.index(EndpointTargets.LIMB_R)
+                ]
+            )
+
+    # ==========================
+    # Long String Representation
+    def __repr__(self) -> str:
+        target_l_str = repr(self.target_l).replace('\n', '\n\t')
+        target_r_str = repr(self.target_r).replace('\n', '\n\t')
+        return (
+            f'<MSG_EndpointTargets>\n\ttarget_l = {target_l_str}\n\ttarget_r' \
+                + f' = {target_r_str}\n</MSG_EndpointTargets>'
+        )
+    
+    # ===========================
+    # Short String Representation
+    def __str__(self) -> str:
+        return (
+            f'<MSG_EndpointTargets target_l={self.target_l}, target_r=' \
+                + f'{self.target_r} />'
+        )
+
 # =============================================================================
 # Robot Definition
 # =============================================================================
@@ -244,6 +383,13 @@ class Robot():
             '/move_group/display_planned_path',
             DisplayTrajectory,
             self._sub_moveit_planner,
+            queue_size=1,
+            tcp_nodelay=True
+        )
+        self._subscriber_endpoint_targets = rospy.Subscriber(
+            '/baxter_ros2/endpoint_targets',
+            EndpointTargets,
+            self._sub_endpoint_targets,
             queue_size=1,
             tcp_nodelay=True
         )
@@ -541,6 +687,15 @@ class Robot():
         threading.Thread(target=move_limb, args=('l', )).start()
         print('Moving Right Arm.')
         threading.Thread(target=move_limb, args=('r', )).start()
+
+    # =============================================
+    # Subscriber Callback - Endpoint Target Planner
+    def _sub_endpoint_targets(self, msg: EndpointTargets) -> None:
+        ''' Subscriber Callback - Endpoint Target Planner. '''
+
+        # create message
+        data = MSG_EndpointTargets(msg)
+        print(f'EndpointTarget Data for MoveIT Controller: {repr(data)}')
 
     # =============
     # Get Limb Pose
