@@ -10,12 +10,15 @@ find_package(ament_cmake REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 find_package(rosidl_default_generators REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(builtin_interfaces REQUIRED)
 
-rosidl_generate_interfaces(
-    ${PROJECT_NAME}
+rosidl_generate_interfaces(${PROJECT_NAME}
     "msg/CameraData.msg"
     "msg/EndpointTarget.msg"
     "msg/EndpointTargets.msg"
+    DEPENDENCIES std_msgs geometry_msgs builtin_interfaces
 )
 
 if(BUILD_TESTING)
@@ -29,9 +32,6 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-install(
-    FILES topic_mapping.yaml
-    DESTINATION share/${PROJECT_NAME}
-)
+install(FILES mapping_rules.yaml DESTINATION share/${PROJECT_NAME})
 
 ament_package()

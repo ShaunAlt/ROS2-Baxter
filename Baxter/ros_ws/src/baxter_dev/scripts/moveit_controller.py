@@ -360,7 +360,7 @@ class Robot():
         moveit_commander.roscpp_initialize(sys.argv)
 
         # initialize rospy node
-        rospy.init_node('moveit_controller_robot', anonymous = True)
+        rospy.init_node('moveit_controller_robot')
 
         # moveit objects
         # self.moveit_robot = moveit_commander.RobotCommander()

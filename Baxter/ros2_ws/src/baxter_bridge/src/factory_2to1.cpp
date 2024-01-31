@@ -44,6 +44,10 @@
 #include <baxter_maintenance_msgs/msg/tare_enable.hpp>
 #include <actionlib_msgs/GoalID.h>
 #include <actionlib_msgs/msg/goal_id.hpp>
+#include <baxter_interface_msgs/EndpointTarget.h>
+#include <baxter_interface_msgs/msg/endpoint_target.hpp>
+#include <baxter_interface_msgs/EndpointTargets.h>
+#include <baxter_interface_msgs/msg/endpoint_targets.hpp>
 
 namespace baxter_bridge
 {
@@ -296,6 +300,20 @@ void convert(const actionlib_msgs::msg::GoalID &src, actionlib_msgs::GoalID &dst
   convert(src.id, dst.id);
 }
 
+template<>
+void convert(const baxter_interface_msgs::msg::EndpointTarget &src, baxter_interface_msgs::EndpointTarget &dst)
+{
+  convert(src.pose, dst.pose);
+  convert(src.mode, dst.mode);
+}
+
+template<>
+void convert(const baxter_interface_msgs::msg::EndpointTargets &src, baxter_interface_msgs::EndpointTargets &dst)
+{
+  convert(src.limbs, dst.limbs);
+  convert(src.targets, dst.targets);
+}
+
 std::map<std::string, std::string> Factory::topics_2to1 = {
   {"/robot/analog_io/command", "baxter_core_msgs/AnalogOutputCommand"},
   {"/robot/digital_io/command", "baxter_core_msgs/DigitalOutputCommand"},
@@ -349,7 +367,9 @@ std::map<std::string, std::string> Factory::topics_2to1 = {
   {"/robustcontroller/left/Tare/enable", "baxter_maintenance_msgs/TareEnable"},
   {"/robustcontroller/right/CalibrateArm/enable", "baxter_maintenance_msgs/CalibrateArmEnable"},
   {"/robustcontroller/right/Tare/enable", "baxter_maintenance_msgs/TareEnable"},
-  {"/tf2_web_republisher/cancel", "actionlib_msgs/GoalID"}};
+  {"/tf2_web_republisher/cancel", "actionlib_msgs/GoalID"},
+  {"/baxter_ros2/endpoint_targets", "baxter_interface_msgs/EndpointTargets"}
+};
 
 void Factory::createBridge_2to1(const std::string &topic, const std::string &msg)
 {
@@ -395,5 +415,9 @@ void Factory::createBridge_2to1(const std::string &topic, const std::string &msg
     bridges.push_back(std::make_unique<Bridge_2to1<baxter_maintenance_msgs::TareEnable, baxter_maintenance_msgs::msg::TareEnable>>(topic));
   else if(msg == "actionlib_msgs/GoalID")
     bridges.push_back(std::make_unique<Bridge_2to1<actionlib_msgs::GoalID, actionlib_msgs::msg::GoalID>>(topic));
+  else if(msg == "baxter_interface_msgs/EndpointTarget")
+    bridges.push_back(std::make_unique<Bridge_2to1<baxter_interface_msgs::EndpointTarget, baxter_interface_msgs::msg::EndpointTarget>>(topic));
+  else if(msg == "baxter_interface_msgs/EndpointTargets")
+    bridges.push_back(std::make_unique<Bridge_2to1<baxter_interface_msgs::EndpointTargets, baxter_interface_msgs::msg::EndpointTargets>>(topic));
 }
 }

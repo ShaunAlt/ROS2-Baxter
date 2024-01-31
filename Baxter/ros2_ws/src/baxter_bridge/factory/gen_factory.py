@@ -49,7 +49,12 @@ with open(pkg_dir + '/factory/baxter.yaml') as f:
 
 
 def valid_node(node: str) -> bool:
-    return 'baxter.local' in node
+    # return 'baxter.local' in node
+    # return True
+    return (
+        ('baxter.local' in node)
+        or ('moveit_controller_robot' in node)
+    )
 
 
 ros1to2 = set()
@@ -63,7 +68,7 @@ for topic, info in infos.items():
     subs = [s for s in info['sub'] if valid_node(s)] if 'sub' in info else []
 
     if len(pubs) and len(subs):
-        print(f'Loop detected ({topic})')
+        print(f'Loop detected ({topic})\n')
         rt_pub = any('/realtime_loop' in p for p in pubs)
         rt_sub = any('/realtime_loop' in s for s in subs)
         if rt_pub and not rt_sub:
@@ -74,12 +79,16 @@ for topic, info in infos.items():
             pubs = []
         else:
             print('  -> /realtime_loop is both subscriber and publisher\n')
-    if len(subs):
+    elif len(subs):
         topics['subscribers'][topic] = info['type']
         ros2to1.add(info['type'])
-    if len(pubs):
+        print(f'  -> Added Subscriber {info["type"]} to topic {topic}\n')
+    elif len(pubs):
         topics['publishers'][topic] = info['type']
         ros1to2.add(info['type'])
+        print(f'  -> Added Publisher {info["type"]} to topic {topic}\n')
+    else:
+        print(f'  -> No Pub or Sub {info["type"]} for topic {topic}\n')
 
 print()
 
@@ -91,7 +100,13 @@ for field in 'dkrp':
     rules['fields_1_to_2'][field.upper()] = field
 
 rules = [rules]
-for pkg in ('baxter_core_msgs','baxter_maintenance_msgs'):
+for pkg in (
+        [
+            'baxter_core_msgs',
+            'baxter_maintenance_msgs',
+            'baxter_interface_msgs',
+        ]
+):
     with open(f'{pkg_dir}/../{pkg}/mapping_rules.yaml') as f:
         rules += yaml.safe_load(f)
 

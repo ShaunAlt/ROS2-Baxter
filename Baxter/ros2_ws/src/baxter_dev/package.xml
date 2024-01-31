@@ -17,6 +17,9 @@
   <exec_depend>baxter_int_ros2</exec_depend>
   <exec_depend>baxter_int_ros2_support</exec_depend>
 
+  <depend>baxter_interface_msgs</depend>
+  <depend>geometry_msgs</depend>
+
   <export>
     <build_type>ament_python</build_type>
   </export>

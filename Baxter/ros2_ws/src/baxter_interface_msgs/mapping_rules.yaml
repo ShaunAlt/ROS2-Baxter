@@ -1,0 +1,8 @@
+- ros1_message_name: EndpointTarget
+  ros1_package_name: baxter_interface_msgs
+  ros2_message_name: EndpointTarget
+  ros2_package_name: baxter_interface_msgs
+- ros1_message_name: EndpointTargets
+  ros1_package_name: baxter_interface_msgs
+  ros2_message_name: EndpointTargets
+  ros2_package_name: baxter_interface_msgs

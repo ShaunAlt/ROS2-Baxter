@@ -1280,3 +1280,7 @@
   pub:
   - /USBService (http://baxter.local:44791/)
   type: std_msgs/Bool
+/baxter_ros2/endpoint_targets:
+  sub:
+  - /moveit_controller_robot
+  type: baxter_interface_msgs/EndpointTargets
