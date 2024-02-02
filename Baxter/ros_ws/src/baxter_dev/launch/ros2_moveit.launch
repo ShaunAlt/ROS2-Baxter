@@ -1,0 +1,8 @@
+<launch>
+    <include file="$(find baxter_moveit_config)/launch/move_group.launch" />
+    <node
+        pkg="baxter_dev"
+        type="ro2_moveit_controller.py"
+        name="moveit_controller_robot_ros1"
+    />
+</launch>
