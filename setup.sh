@@ -47,9 +47,8 @@ create_aliases() {
     echo "| - Creating Aliases"
     echo "Defining Aliases" | S1
     ALIASES=(
-        "alias baxter_bridge='ros2_ws && bash bridge.sh'"
-        "alias baxter_connect='baxter_init && baxter_bridge'"
-        "alias baxter_init='ros_ws && bash init.sh'"
+        "alias baxter_bridge='ros2_ws && ./bridge.sh'"
+        "alias baxter_init='ros_ws && ./init.sh'"
         "alias baxter_ping='ping 011312P0012.local'"
         "alias cd_moveit='cd ${DIR}/Baxter/moveit_ws'"
         "alias cd_ros1='cd ${DIR}/Baxter/ros_ws'"
