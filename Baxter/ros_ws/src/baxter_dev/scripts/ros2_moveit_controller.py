@@ -76,9 +76,9 @@ else:
 # =============================================================================
 # Type Definitions
 # =============================================================================
-_DATA_POINT = tuple[float, float, float]
-_DATA_QUARTERNION = tuple[float, float, float]
-_DATA_POSE = tuple[_DATA_POINT, _DATA_QUARTERNION]
+_DATA_POINT = Tuple[float, float, float]
+_DATA_QUARTERNION = Tuple[float, float, float]
+_DATA_POSE = Tuple[_DATA_POINT, _DATA_QUARTERNION]
 _PLAN = List[Dict[str, float]]
 
 
