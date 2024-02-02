@@ -24,7 +24,7 @@ from baxter_interface_msgs.msg import (
     EndpointTarget,
     EndpointTargets, 
 )
-from geometry_msgs.msg import (
+from geometry_msgs.msg import ( # type: ignore
     Pose,
     Point,
     Quaternion,
@@ -61,15 +61,15 @@ class MinimalPublisher(Node):
             targets = [EndpointTarget(
                 pose = Pose(
                     position = Point(
-                        x = 1.0,
-                        y = 1.0,
-                        z = 1.0
+                        x = 0.6380249604294951,
+                        y = 0.14025225230336114,
+                        z = 0.12495353404139961
                     ),
                     orientation = Quaternion(
-                        x = 1.0,
-                        y = 1.0,
-                        z = 1.0,
-                        w = 1.0
+                        x = 0.18058038877281843,
+                        y = 0.9806283842483902,
+                        z = -0.015517398241163896,
+                        w = 0.07428260596448302
                     )
                 ),
                 mode = EndpointTarget.MODE_NORMAL
