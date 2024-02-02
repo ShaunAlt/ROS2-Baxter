@@ -24,7 +24,7 @@ baxter_hostname="011312P0012.local"
 # Set *Either* your computers ip address or hostname. Please note if using
 # your_hostname that this must be resolvable to Baxter.
 #your_ip="<enter your development machine IP address>"
-your_hostname="Baxter.local"
+your_hostname="${HOSTNAME}.local"
 
 # Specify ROS distribution (e.g. indigo, hydro, etc.)
 ros_version="noetic"
