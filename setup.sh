@@ -39,6 +39,13 @@ install_dependencies() {
     sudo apt-get install ros-galactic-ros-base | S2
     echo "ROS Developer Tools" | S1
     sudo apt-get install ros-dev-tools | S2
+    echo "Python3 PIP" | S1
+    sudo apt-get install python3-pip | S2
+    echo "PIP Packages" | S1
+    echo "PyAutoGUI" | S2
+    pip install pyautogui==0.9.54 | S3
+    echo "OpenCV 2" | S2
+    pip install opencv-python==4.4.0.46 | S3
 }
 install_dependencies
 
