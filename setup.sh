@@ -60,6 +60,11 @@ create_aliases() {
         "alias moveit_ws='cd_moveit && src_ws1'"
         "alias ros_ws='cd_ros1 && src_ws1'"
         "alias ros2_ws='cd_ros2 && src_ws2'"
+        "alias run_all='cd ${DIR} && ./baxter_commands.py -a'"
+        "alias run_bridge='cd ${DIR} && ./baxter_commands.py -b'"
+        "alias run_moveit='cd ${DIR} && ./baxter_commands.py -m'"
+        "alias run_tuck='cd ${DIR} && ./baxter_commands.py -t'"
+        "alias run_untuck='cd ${DIR} && ./baxter_commands.py -u'"
     )
     echo "Setting Aliases" | S1
     printf "%s\n" "${ALIASES[@]}" >> ~/.bash_aliases
