@@ -543,29 +543,29 @@ class Controller():
     # ===========
     # Constructor
     def __init__(self) -> None:
-        print('Creating MoveIT ROS1 Controller')
+        rospy.loginfo('Creating MoveIT ROS1 Controller')
 
         # initialize moveit commander
-        print('| - Initializing MoveIT Commander.')
+        rospy.loginfo('| - Initializing MoveIT Commander.')
         moveit_commander.roscpp_initialize(sys.argv)
 
         # initialize rospy node
-        print('| - Initializng ROSPY Node.')
-        rospy.init_node('moveit_controller_robot')
+        rospy.loginfo('| - Initializng ROSPY Node.')
+        rospy.init_node('moveit_controller_robot', log_level=rospy.INFO)
 
         # moveit groups
-        print('| - Creating Move Groups.')
+        rospy.loginfo('| - Creating Move Groups.')
         self.moveit_group_l = moveit_commander.MoveGroupCommander('left_arm')
-        print('\t| - Left Group Done ("left_arm").')
+        rospy.loginfo('\t| - Left Group Done ("left_arm").')
         self.moveit_group_r = moveit_commander.MoveGroupCommander('right_arm')
-        print('\t| - Right Group Done ("right_arm").')
+        rospy.loginfo('\t| - Right Group Done ("right_arm").')
 
         # robot limbs
-        print('| - Initializing Robot Limbs.')
+        rospy.loginfo('| - Initializing Robot Limbs.')
         self.limb_l = Limb('left')
         self.limb_r = Limb('right')
 
-        print('| - Initializing Targets')
+        rospy.loginfo('| - Initializing Targets')
         # movement flags
         self.moving_l: bool = False
         self.moving_r: bool = False
@@ -574,7 +574,7 @@ class Controller():
         self._target_r: Optional[MSG_EndpointTarget] = None
 
         # create ROS2 subscriber
-        print('| - Creating Topic Subscriber (/baxter_ros2/endpoint_targets).')
+        rospy.loginfo('| - Creating Topic Subscriber (/baxter_ros2/endpoint_targets).')
         rospy.Subscriber(
             '/baxter_ros2/endpoint_targets',
             EndpointTargets,
@@ -583,7 +583,7 @@ class Controller():
             tcp_nodelay=True
         )
 
-        print('MoveIT Controller Ready')
+        rospy.loginfo('MoveIT Controller Ready')
 
     # ================
     # Left Target Pose
@@ -676,7 +676,7 @@ class Controller():
         self.target_l = None
 
         # display movement
-        print(f'Left Target Movement: {target}')
+        rospy.loginfo(f'Left Target Movement: {target}')
 
         # create plan
         plan: _PLAN = self.plan(
@@ -697,7 +697,7 @@ class Controller():
             self.limb_l.move_to_joint_positions(point, threshold=tolerance)
 
         if self.target_l is not None:
-            print('New Left Target - Overriding Movement')
+            rospy.loginfo('New Left Target - Overriding Movement')
             self._move_left()
 
         self.moving_l = False
@@ -720,7 +720,7 @@ class Controller():
         self.target_r = None
 
         # display movement
-        print(f'Right Target Movement: {target}')
+        rospy.loginfo(f'Right Target Movement: {target}')
 
         # create plan
         plan: _PLAN = self.plan(
@@ -741,7 +741,7 @@ class Controller():
             self.limb_r.move_to_joint_positions(point, threshold=tolerance)
 
         if self.target_r is not None:
-            print('New Right Target - Overriding Movement')
+            rospy.loginfo('New Right Target - Overriding Movement')
             self._move_right()
 
         self.moving_r = False
