@@ -693,7 +693,19 @@ class Controller():
             for i, p in enumerate(plan):
                 # if the target has changed since movement started, skip the
                 #  current target
-                if self.targets is not None:
+                if (
+                        (self.targets is not None)
+                        and (
+                            (
+                                (side == 'l')
+                                and (self.targets.target_l is not None)
+                            )
+                            or (
+                                (side == 'r')
+                                and (self.targets.target_r is not None)
+                            )
+                        )
+                ):
                     return None
                 
                 # set tolerance for movement
