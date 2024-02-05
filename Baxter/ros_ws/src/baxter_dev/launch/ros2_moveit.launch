@@ -4,5 +4,6 @@
         pkg="baxter_dev"
         type="ros2_moveit_controller.py"
         name="moveit_controller_robot_ros1"
+        output="screen"
     />
 </launch>
