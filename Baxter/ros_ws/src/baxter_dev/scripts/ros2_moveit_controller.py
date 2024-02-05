@@ -543,36 +543,36 @@ class Controller():
     # ===========
     # Constructor
     def __init__(self) -> None:
-        print('Creating MoveIT ROS1 Controller')
+        rospy.loginfo('Creating MoveIT ROS1 Controller')
 
         # initialize moveit commander
-        print('| - Initializing MoveIT Commander.')
+        rospy.loginfo('| - Initializing MoveIT Commander.')
         moveit_commander.roscpp_initialize(sys.argv)
 
         # initialize rospy node
-        print('| - Initializng ROSPY Node.')
+        rospy.loginfo('| - Initializng ROSPY Node.')
         rospy.init_node('moveit_controller_robot')
 
         # moveit groups
-        print('| - Creating Move Groups.')
+        rospy.loginfo('| - Creating Move Groups.')
         self.moveit_group_l = moveit_commander.MoveGroupCommander('left_arm')
-        print('\t| - Left Group Done ("left_arm").')
+        rospy.loginfo('\t| - Left Group Done ("left_arm").')
         self.moveit_group_r = moveit_commander.MoveGroupCommander('right_arm')
-        print('\t| - Right Group Done ("right_arm").')
+        rospy.loginfo('\t| - Right Group Done ("right_arm").')
 
         # robot limbs
-        print('| - Initializing Robot Limbs.')
+        rospy.loginfo('| - Initializing Robot Limbs.')
         self.limb_l = Limb('left')
         self.limb_r = Limb('right')
 
-        print('| - Defining Local Variables')
+        rospy.loginfo('| - Defining Local Variables')
         # moving flag
         self.moving: bool = False
         # define targets
         self.targets: Optional[MSG_EndpointTargets] = None
 
         # create ROS2 subscriber
-        print('| - Creating Topic Subscriber (/baxter_ros2/endpoint_targets).')
+        rospy.loginfo('| - Creating Topic Subscriber (/baxter_ros2/endpoint_targets).')
         rospy.Subscriber(
             '/baxter_ros2/endpoint_targets',
             EndpointTargets,
@@ -581,7 +581,7 @@ class Controller():
             tcp_nodelay=True
         )
 
-        print('MoveIT Controller Ready')
+        rospy.loginfo('MoveIT Controller Ready')
 
     # ====================================================
     # Subscriber Callback - ROS2 Endpoint Targets Receiver
@@ -657,7 +657,7 @@ class Controller():
         self.targets = None
 
         # display movement target
-        print(f'Moving: {targets}')
+        rospy.loginfo(f'Moving: {targets}')
 
         # create plans
         plan_l: _PLAN = []
@@ -715,7 +715,7 @@ class Controller():
 
         # if new target has been set, run it
         if self.targets is not None: 
-            print('New Target - Overriding Movement')
+            rospy.loginfo('New Target - Overriding Movement')
             self.move()
 
         # set flag that movement has ended

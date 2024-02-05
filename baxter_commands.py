@@ -25,6 +25,7 @@ import time
 # Constant Definitions
 # =============================================================================
 
+pg.FAILSAFE = False
 CMD_DELAY: float = 0.5
 
 
