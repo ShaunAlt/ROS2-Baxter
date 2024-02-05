@@ -765,6 +765,7 @@ class Controller():
 # Main Loop
 # =============================================================================
 def main():
+    input()
     _ = Controller()
     rospy.spin()
     return 0
