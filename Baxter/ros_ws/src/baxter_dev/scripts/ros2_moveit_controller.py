@@ -254,6 +254,17 @@ class MSG_Point():
         self.y: float = msg.y
         self.z: float = msg.z
 
+    # =============
+    # Point Message
+    @property
+    def msg(self) -> Point:
+        ''' Point Message. '''
+        return Point(
+            x = self.x,
+            y = self.y,
+            z = self.z
+        )
+
     # ==========================
     # Long String Representation
     def __repr__(self) -> str:
@@ -324,6 +335,16 @@ class MSG_Pose():
     def __init__(self, msg: Pose) -> None:
         self.point = MSG_Point(msg.position)
         self.quarternion = MSG_Quarternion(msg.orientation)
+
+    # ====
+    # Pose
+    @property
+    def msg(self) -> Pose:
+        ''' Pose Message. '''
+        return Pose(
+            position = self.point.msg,
+            orientation = self.quarternion.msg
+        )
 
     # ==========================
     # Long String Representation
@@ -402,6 +423,18 @@ class MSG_Quarternion():
         self.y: float = msg.y
         self.z: float = msg.z
         self.w: float = msg.w
+
+    # ===================
+    # Quarternion Message
+    @property
+    def msg(self) -> Quaternion:
+        ''' Quarternion Message. '''
+        return Quaternion(
+            x = self.x,
+            y = self.y,
+            z = self.z,
+            w = self.w
+        )
 
     # ==========================
     # Long String Representation
@@ -510,6 +543,7 @@ class Controller():
     # ===========
     # Constructor
     def __init__(self) -> None:
+        print('')
         # initialize moveit commander
         moveit_commander.roscpp_initialize(sys.argv)
         # initialize rospy node
@@ -739,12 +773,12 @@ class Controller():
         # create plan
         if cartesian:
             (traj, _) = move_group.compute_cartesian_path(
-                [self.get_limb_pose(limb), goal],
+                [self.get_limb_pose(limb), goal.msg],
                 0.01,
                 0
             )
         else:
-            (_, traj, _, _) = move_group.plan(goal)
+            (_, traj, _, _) = move_group.plan(goal.msg)
 
         # create aliases
         joint_names = traj.joint_trajectory.joint_names
