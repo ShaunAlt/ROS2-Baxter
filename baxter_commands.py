@@ -61,17 +61,21 @@ def tab(window: bool = False) -> None:
 # Baxter Bridge
 def bridge():
     ''' Creates and runs the Baxter Bridge. '''
-    tab()
     print(
         '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
         + '|       Creating Baxter Bridge       |\n' \
         + '|------------------------------------|\n' \
-        + '| 1. Runs `baxter_init`.             |\n' \
-        + '| 2. Waits 5 seconds for the script  |\n' \
+        + '| 1. Creates a new terminal tab.     |\n' \
+        + '| 2. Runs `baxter_init`.             |\n' \
+        + '| 3. Waits 2 seconds for the script  |\n' \
         + '|    to finish.                      |\n' \
-        + '| 3. Runs `baxter_bridge`.           |\n' \
+        + '| 4. Runs `baxter_bridge`.           |\n' \
+        + '|------------------------------------|\n' \
+        + '|     Press `ENTER` Key to Start     |\n' \
         + '|____________________________________|\n'
     )
+    input()
+    tab()
     cmd('baxter_init')
     time.sleep(2)
     cmd('baxter_bridge')
@@ -81,25 +85,36 @@ def bridge():
 # ROS1 - MoveIT
 def ros1_moveit():
     ''' Creates the ROS1 MoveIT Nodes. '''
-    tab()
     print(
-        '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
-        + '|     Creating ROS1 MoveIT Nodes     |\n' \
-        + '|------------------------------------|\n' \
-        + '| 1. Runs `baxter_init`.             |\n' \
-        + '| 2. Waits 5 seconds for the script  |\n' \
-        + '|    to finish.                      |\n' \
-        + '| 3. Runs `moveit_ws`.               |\n' \
-        + '| 4. Launches the MoveIT Move Group. |\n' \
-        + '| 5. Waits 60 seconds for the        |\n' \
-        + '|    `move_group.launch` file to     |\n' \
-        + '|    launch.                         |\n' \
-        + '| 6. Creates a new terminal tab.     |\n' \
-        + '| 7. Runs `baxter_init`.             |\n' \
-        + '| 8. Waits 5 seconds for the script  |\n' \
-        + '|    to finish.                      |\n' \
-        + '| 9. Launches the MoveIT Controller. |\n' \
-        + '|____________________________________|\n' \
+        '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
+        + '|     Creating ROS1 MoveIT Nodes      |\n' \
+        + '|-------------------------------------|\n' \
+        + '|  1. Creates a new terminal tab.     |\n' \
+        + '|  2. Runs `baxter_init`.             |\n' \
+        + '|  3. Waits 2 seconds for the script  |\n' \
+        + '|     to finish.                      |\n' \
+        + '|  4. Runs `ros_ws`.                  |\n' \
+        + '|  5. Runs `moveit_ws`.               |\n' \
+        + '|  6. Runs `cd_ros1`.                 |\n' \
+        + '|  7. Updates Environment Variables.  |\n' \
+        + '|     - CMAKE_PREFIX_PATH             |\n' \
+        + '|     - LD_LIBRARY_PATH               |\n' \
+        + '|     - PKG_CONFIG_PATH               |\n' \
+        + '|     - PYTHONPATH                    |\n' \
+        + '|     - ROS_PACKAGE_PATH              |\n' \
+        + '|     - ROSLISP_PACKAGE_DIRECTORIES   |\n' \
+        + '|  8. Launches the `move_group` and   |\n' \
+        + '|     `controller` moveit files.      |\n' \
+        + '|  9. Once the `move_group` file has  |\n' \
+        + '|     launched, press `ENTER` after   |\n' \
+        + '|     green text appears stating      |\n' \
+        + '|     "You can start planning now!".  |\n' \
+        + '| 10. Once the line "MoveIT           |\n' \
+        + '|     Controller Ready" is printed,   |\n' \
+        + '|     you can start sending it data.  |\n' \
+        + '|-------------------------------------|\n' \
+        + '|     Press `ENTER` Key to Start      |\n' \
+        + '|_____________________________________|\n' \
         + '\n' \
         + 'NOTE:\n' \
         + '| - If the error "robot semantic description not found" occurs,\n' \
@@ -113,6 +128,8 @@ def ros1_moveit():
         + '| - For all other errors, or continuing errors, restart machine\n' \
             + '\tand/or Baxter.\n'
     )
+    input()
+    tab()
     cmd('baxter_init')
     time.sleep(2)
     cmd('ros_ws')
@@ -132,19 +149,23 @@ def ros1_moveit():
 def ros1_tuck(tuck):
     ''' Tucks (`True`) or Untucks (`False`) Baxters Arms. '''
     a, b, c = {True: ('t', 'Tuck', 1), False: ('u', 'Untuck', 0)}[tuck]
-    tab()
     print(
         '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
         + f'|      {" "*c} Baxter Arms -  {b} {" "*c}       |\n' \
         + '|------------------------------------|\n' \
-        + '| 1. Runs `baxter_init`.             |\n' \
-        + '| 2. Waits 5 seconds for the script  |\n' \
+        + '| 1. Creates a new terminal tab.     |\n' \
+        + '| 2. Runs `baxter_init`.             |\n' \
+        + '| 3. Waits 2 seconds for the script  |\n' \
         + '|    to finish.                      |\n' \
-        + '| 3. Runs the `tuck_arms.py` script  |\n' \
+        + '| 4. Runs the `tuck_arms.py` script  |\n' \
         + f'|    with the -{a} parameter to        |\n' \
         + f'|    {b.lower()} Baxter\'s Arms.           {" "*c*2}|\n' \
+        + '|------------------------------------|\n' \
+        + '|     Press `ENTER` Key to Start     |\n' \
         + '|____________________________________|\n' 
     )
+    input()
+    tab()
     cmd('baxter_init')
     time.sleep(2)
     cmd(f'rosrun baxter_tools tuck_arms.py -{a}')

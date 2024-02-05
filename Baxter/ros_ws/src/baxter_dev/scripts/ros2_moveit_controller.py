@@ -543,27 +543,36 @@ class Controller():
     # ===========
     # Constructor
     def __init__(self) -> None:
-        print('')
+        print('Creating MoveIT ROS1 Controller')
+
         # initialize moveit commander
+        print('| - Initializing MoveIT Commander.')
         moveit_commander.roscpp_initialize(sys.argv)
+
         # initialize rospy node
+        print('| - Initializng ROSPY Node.')
         rospy.init_node('moveit_controller_robot')
 
         # moveit groups
+        print('| - Creating Move Groups.')
         self.moveit_group_l = moveit_commander.MoveGroupCommander('left_arm')
+        print('\t| - Left Group Done ("left_arm").')
         self.moveit_group_r = moveit_commander.MoveGroupCommander('right_arm')
+        print('\t| - Right Group Done ("right_arm").')
 
         # robot limbs
+        print('| - Initializing Robot Limbs.')
         self.limb_l = Limb('left')
         self.limb_r = Limb('right')
 
+        print('| - Defining Local Variables')
         # moving flag
         self.moving: bool = False
-
         # define targets
         self.targets: Optional[MSG_EndpointTargets] = None
 
         # create ROS2 subscriber
+        print('| - Creating Topic Subscriber (/baxter_ros2/endpoint_targets).')
         rospy.Subscriber(
             '/baxter_ros2/endpoint_targets',
             EndpointTargets,
@@ -571,6 +580,8 @@ class Controller():
             queue_size=1,
             tcp_nodelay=True
         )
+
+        print('MoveIT Controller Ready')
 
     # ====================================================
     # Subscriber Callback - ROS2 Endpoint Targets Receiver
@@ -679,7 +690,7 @@ class Controller():
             num_pos = len(plan)
 
             # move through joint positions
-            for i, p in plan:
+            for i, p in enumerate(plan):
                 # if the target has changed since movement started, skip the
                 #  current target
                 if self.targets is not None:
