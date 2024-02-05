@@ -547,11 +547,8 @@ class Controller():
 
         # initialize moveit commander
         rospy.loginfo('| - Initializing MoveIT Commander.')
+        rospy.loginfo(f'| - System Arguments: {sys.argv}')
         moveit_commander.roscpp_initialize(sys.argv)
-
-        # initialize rospy node
-        rospy.loginfo('| - Initializng ROSPY Node.')
-        rospy.init_node('moveit_controller_robot', log_level=rospy.INFO)
 
         # moveit groups
         rospy.loginfo('| - Creating Move Groups.')
@@ -836,6 +833,9 @@ class Controller():
 # =============================================================================
 def main():
     input()
+    # initialize rospy node
+    rospy.init_node('moveit_controller_robot', log_level=rospy.INFO)
+    rospy.loginfo('Initialized ROSPY Node.')
     _ = Controller()
     rospy.spin()
     return 0

@@ -118,16 +118,19 @@ def ros1_moveit():
         + '|_____________________________________|\n' \
         + '\n' \
         + 'NOTE:\n' \
-        + '| - If the error "robot semantic description not found" occurs,\n' \
-            + '|\tstop the script (CTRL+C) and run\n' \
-            + '|\t`roslaunch baxter_moveit_config demo_baxter.launch` to\n' \
-            + '|\topen RVIZ, which should fix the issue.\n' \
-        + '| - Ignore "action client not connected" errors\n' \
-        + '| - If the error "group \'{left_arm|right_arm}\' is not found\n' \
-            + '|\toccurs, restart both the `move_group` and `ros2_moveit`\n' \
-            + '|\tlaunch files.\n' \
-        + '| - For all other errors, or continuing errors, restart machine\n' \
-            + '|\tand/or Baxter.\n'
+        + '| - If any of the following errors occur, stop the launch\n' \
+            + '|\tscript (CTRL+C) and re-run it (it will be the most\n' \
+            + '|\trecent command run in the active terminal):\n' \
+            + '|\t| - "robot semantic description not found".\n' \
+            + '|\t| - "group \'left_arm\' is not found".\n' \
+            + '|\t| - "group \'right_arm\' is not found".\n' \
+            + '|\t| - "could not connect to "move_group" action server.\n' \
+        + '| - Ignore any of the following errors:\n' \
+            + '|\t| - "action client not connected".\n' \
+        + '| - For all other errors, or continuously appearing errors that\n' \
+            + '|\trequire restarts, restart the entire terminal and retry.\n' \
+            + '|\tIf that doesn\'t work, restart the Baxter robot and/or\n' \
+            + '|\tthe computer and the issue should be resolved.\n'
     )
     input()
     tab()
