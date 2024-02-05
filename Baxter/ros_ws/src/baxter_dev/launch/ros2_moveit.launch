@@ -1,5 +1,5 @@
 <launch>
-    <!-- <include file="$(find baxter_moveit_config)/launch/move_group.launch" /> -->
+    <include file="$(find baxter_moveit_config)/launch/move_group.launch" />
     <node
         pkg="baxter_dev"
         type="ros2_moveit_controller.py"

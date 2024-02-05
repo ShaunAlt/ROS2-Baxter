@@ -16,6 +16,7 @@ Creates and runs commands on the Command Line.
 # =============================================================================
 
 import argparse
+import os
 import pyautogui as pg # type: ignore
 import time
 
@@ -36,16 +37,6 @@ CMD_DELAY: float = 0.5
 def cmd(command: str) -> None:
     ''' Runs a Command. '''
     pg.write(command)
-    pg.press('enter')
-    time.sleep(CMD_DELAY)
-    return None
-
-# ============
-# Echo Command
-def echo(s: str) -> None:
-    ''' Echos a string to the console. '''
-    s = s.replace('"', '\\"')
-    pg.write(f'echo "\n{s}"')
     pg.press('enter')
     time.sleep(CMD_DELAY)
     return None
@@ -71,7 +62,7 @@ def tab(window: bool = False) -> None:
 def bridge():
     ''' Creates and runs the Baxter Bridge. '''
     tab()
-    echo(
+    print(
         '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
         + '|       Creating Baxter Bridge       |\n' \
         + '|------------------------------------|\n' \
@@ -82,7 +73,7 @@ def bridge():
         + '|____________________________________|\n'
     )
     cmd('baxter_init')
-    time.sleep(5)
+    time.sleep(2)
     cmd('baxter_bridge')
     return
 
@@ -91,7 +82,7 @@ def bridge():
 def ros1_moveit():
     ''' Creates the ROS1 MoveIT Nodes. '''
     tab()
-    echo(
+    print(
         '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
         + '|     Creating ROS1 MoveIT Nodes     |\n' \
         + '|------------------------------------|\n' \
@@ -123,13 +114,16 @@ def ros1_moveit():
             + '\tand/or Baxter.\n'
     )
     cmd('baxter_init')
-    time.sleep(5)
+    time.sleep(2)
+    cmd('ros_ws')
     cmd('moveit_ws')
-    cmd('roslaunch baxter_moveit_config move_group.launch')
-    time.sleep(60)
-    tab()
-    cmd('baxter_init')
-    time.sleep(5)
+    cmd('cd_ros1')
+    cmd('export CMAKE_PREFIX_PATH="${PWD}/devel:${CMAKE_PREFIX_PATH}"')
+    cmd('export LD_LIBRARY_PATH="${PWD}/devel/lib:${LD_LIBRARY_PATH}"')
+    cmd('export PKG_CONFIG_PATH="${PWD}/devel/lib/pkgconfig:${PKG_CONFIG_PATH}"')
+    cmd('export PYTHONPATH="${PWD}/devel/lib/python3/dist-packages:${PYTHONPATH}"')
+    cmd('export ROS_PACKAGE_PATH="${PWD}/src:${ROS_PACKAGE_PATH}"')
+    cmd('export ROSLISP_PACKAGE_DIRECTORIES="${PWD}/devel/share/common-lisp:${ROSLISP_PACKAGE_DIRECTORIES}"')
     cmd('roslaunch baxter_dev ros2_moveit.launch')
     return
 
@@ -139,7 +133,7 @@ def ros1_tuck(tuck):
     ''' Tucks (`True`) or Untucks (`False`) Baxters Arms. '''
     a, b, c = {True: ('t', 'Tuck', 1), False: ('u', 'Untuck', 0)}[tuck]
     tab()
-    echo(
+    print(
         '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
         + f'|      {" "*c} Baxter Arms -  {b} {" "*c}       |\n' \
         + '|------------------------------------|\n' \
@@ -152,7 +146,7 @@ def ros1_tuck(tuck):
         + '|____________________________________|\n' 
     )
     cmd('baxter_init')
-    time.sleep(5)
+    time.sleep(2)
     cmd(f'rosrun baxter_tools tuck_arms.py -{a}')
     return
 
