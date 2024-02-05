@@ -108,13 +108,25 @@ def ros1_moveit():
         + '| 8. Waits 5 seconds for the script  |\n' \
         + '|    to finish.                      |\n' \
         + '| 9. Launches the MoveIT Controller. |\n' \
-        + '|____________________________________|\n'
+        + '|____________________________________|\n' \
+        + '\n' \
+        + 'NOTE:\n' \
+        + '| - If the error "robot semantic description not found" occurs,\n' \
+            + '\tstop the script (CTRL+C) and run\n' \
+            + '\t`roslaunch baxter_moveit_config demo_baxter.launch` to\n' \
+            + '\topen RVIZ, which should fix the issue.\n' \
+        + '| - Ignore "action client not connected" errors\n' \
+        + '| - If the error "group \'{left_arm|right_arm}\' is not found\n' \
+            + '\toccurs, restart both the `move_group` and `ros2_moveit`\n' \
+            + '\tlaunch files.\n' \
+        + '| - For all other errors, or continuing errors, restart machine\n' \
+            + '\tand/or Baxter.\n'
     )
     cmd('baxter_init')
     time.sleep(5)
     cmd('moveit_ws')
     cmd('roslaunch baxter_moveit_config move_group.launch')
-    time.sleep(30)
+    time.sleep(60)
     tab()
     cmd('baxter_init')
     time.sleep(5)
