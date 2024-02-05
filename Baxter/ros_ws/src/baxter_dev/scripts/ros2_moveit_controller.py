@@ -591,7 +591,7 @@ class Controller():
     def target_l(self) -> Optional[MSG_EndpointTarget]:
         ''' Left Target Pose. '''
         return self._target_l
-    @target_l.setter()
+    @target_l.setter
     def target_l(self, data: Optional[MSG_EndpointTarget]) -> None:
         self._target_l = data
         if data is not None:
@@ -603,7 +603,7 @@ class Controller():
     def target_r(self) -> Optional[MSG_EndpointTarget]:
         ''' Right Target Pose. '''
         return self._target_r
-    @target_r.setter()
+    @target_r.setter
     def target_r(self, data: Optional[MSG_EndpointTarget]) -> None:
         self._target_r = data
         if data is not None:
