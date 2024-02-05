@@ -565,11 +565,13 @@ class Controller():
         self.limb_l = Limb('left')
         self.limb_r = Limb('right')
 
-        print('| - Defining Local Variables')
-        # moving flag
-        self.moving: bool = False
+        print('| - Initializing Targets')
+        # movement flags
+        self.moving_l: bool = False
+        self.moving_r: bool = False
         # define targets
-        self.targets: Optional[MSG_EndpointTargets] = None
+        self._target_l: Optional[MSG_EndpointTarget] = None
+        self._target_r: Optional[MSG_EndpointTarget] = None
 
         # create ROS2 subscriber
         print('| - Creating Topic Subscriber (/baxter_ros2/endpoint_targets).')
@@ -583,16 +585,46 @@ class Controller():
 
         print('MoveIT Controller Ready')
 
+    # ================
+    # Left Target Pose
+    @property
+    def target_l(self) -> Optional[MSG_EndpointTarget]:
+        ''' Left Target Pose. '''
+        return self._target_l
+    @target_l.setter()
+    def target_l(self, data: Optional[MSG_EndpointTarget]) -> None:
+        self._target_l = data
+        if data is not None:
+            self._move_left()
+
+    # ================
+    # Right Target Pose
+    @property
+    def target_r(self) -> Optional[MSG_EndpointTarget]:
+        ''' Right Target Pose. '''
+        return self._target_r
+    @target_r.setter()
+    def target_r(self, data: Optional[MSG_EndpointTarget]) -> None:
+        self._target_r = data
+        if data is not None:
+            self._move_right()
+
     # ====================================================
     # Subscriber Callback - ROS2 Endpoint Targets Receiver
     def _sub_endpoint_targets(self, msg: EndpointTargets) -> None:
         ''' Subscriber Callback - ROS2 Endpoint Targets Receiver. '''
 
         # get message data
-        self.targets = MSG_EndpointTargets(msg)
-
-        # move robot - if moving block isn't currently running
-        if not self.moving: self.move()
+        targets = MSG_EndpointTargets(msg)
+        def set_l(): 
+            if not self.moving_l: self.target_l = targets.target_l
+        def set_r(): 
+            if not self.moving_r: self.target_r = targets.target_r
+        threads: List[threading.Thread] = [
+            threading.Thread(target=set_l),
+            threading.Thread(target=set_r),
+        ]
+        for _t in threads: _t.start()
 
     # =============
     # Get Limb Pose
@@ -627,111 +659,92 @@ class Controller():
                 w = limb._cartesian_pose['orientation'][3]
             )
         )
-    
-    # ================
-    # Move Robot Limbs
-    def move(self) -> None:
-        '''
-        Move Robot Limbs
-        -
-        Moves the limbs of the robot to specified endpoint targets (`Pose`).
 
-        Parameters
-        -
-        None
+    # =======================
+    # Move Robot Limbs - Left
+    def _move_left(self) -> None:
+        ''' Move Robot Limbs - Left Limb. '''
 
-        Returns
-        -
-        None
-        '''
+        self.moving_l = True
 
-        # set flag that movement has started
-        self.moving = True
-
-        # copy targets and clear parent targets
-        if self.targets is None:
+        # copy target and clear parent
+        if self.target_l is None:
             raise RuntimeError(
-                f'Controller.move() was called without any `targets` set.'
+                'Controller._move_left() called but `target_l` is None.'
             )
-        targets: MSG_EndpointTargets = self.targets
-        self.targets = None
+        target: MSG_EndpointTarget = self.target_l
+        self.target_l = None
 
-        # display movement target
-        print(f'Moving: {targets}')
+        # display movement
+        print(f'Left Target Movement: {target}')
 
-        # create plans
-        plan_l: _PLAN = []
-        plan_r: _PLAN = []
-        cart_l: bool = False
-        cart_r: bool = False
-        if targets.target_l is not None:
-            plan_l = self.plan(
-                "l",
-                targets.target_l.pose,
-                cartesian = targets.target_l.flag_cartesian,
-                skip_to_end = targets.target_l.flag_skip
+        # create plan
+        plan: _PLAN = self.plan(
+            "l",
+            target.pose,
+            cartesian = target.flag_cartesian,
+            skip_to_end = target.flag_skip
+        )
+        num_points = len(plan)
+
+        for i, point in enumerate(plan):
+            if (self.target_l is not None):
+                break
+            tolerance: float = {
+                True: Controller.JOINT_TOLERANCE_SMALL,
+                False: Controller.JOINT_TOLERANCE_BIG,
+            }[(i == num_points-1) or (target.flag_cartesian)]
+            self.limb_l.move_to_joint_positions(point, threshold=tolerance)
+
+        if self.target_l is not None:
+            print('New Left Target - Overriding Movement')
+            self._move_left()
+
+        self.moving_l = False
+
+        return None
+
+    # ========================
+    # Move Robot Limbs - Right
+    def _move_right(self) -> None:
+        ''' Move Robot Limbs - Right Limb. '''
+
+        self.moving_r = True
+
+        # copy target and clear parent
+        if self.target_r is None:
+            raise RuntimeError(
+                'Controller._move_right() called but `target_r` is None.'
             )
-            cart_l = targets.target_l.flag_cartesian
-        if targets.target_r is not None:
-            plan_r = self.plan(
-                "r",
-                targets.target_r.pose,
-                cartesian = targets.target_r.flag_cartesian,
-                skip_to_end = targets.target_r.flag_skip
-            )
-            cart_r = targets.target_r.flag_cartesian
+        target: MSG_EndpointTarget = self.target_r
+        self.target_r = None
 
-        # create movement function
-        def _move(side: str) -> None:
-            # get limb and plan
-            limb: Limb = {'l': self.limb_l, 'r': self.limb_r}[side]
-            plan: _PLAN = {'l': plan_l, 'r': plan_r}[side]
-            cart: bool = {'l': cart_l, 'r': cart_r}[side]
-            num_pos = len(plan)
+        # display movement
+        print(f'Right Target Movement: {target}')
 
-            # move through joint positions
-            for i, p in enumerate(plan):
-                # if the target has changed since movement started, skip the
-                #  current target
-                if (
-                        (self.targets is not None)
-                        and (
-                            (
-                                (side == 'l')
-                                and (self.targets.target_l is not None)
-                            )
-                            or (
-                                (side == 'r')
-                                and (self.targets.target_r is not None)
-                            )
-                        )
-                ):
-                    return None
-                
-                # set tolerance for movement
-                tolerance: float = {
-                    True: Controller.JOINT_TOLERANCE_SMALL,
-                    False: Controller.JOINT_TOLERANCE_BIG,
-                }[((i == num_pos-1) or (cart))]
-                    
-                limb.move_to_joint_positions(p, threshold=tolerance)
-            return None
+        # create plan
+        plan: _PLAN = self.plan(
+            "l",
+            target.pose,
+            cartesian = target.flag_cartesian,
+            skip_to_end = target.flag_skip
+        )
+        num_points = len(plan)
 
-        # multi-thread limb movement
-        threads: List[threading.Thread] = [
-            threading.Thread(target=_move, args=('l',)),
-            threading.Thread(target=_move, args=('r',)),
-        ]
-        for _t in threads: _t.start()
-        for _t in threads: _t.join()
+        for i, point in enumerate(plan):
+            if (self.target_r is not None):
+                break
+            tolerance: float = {
+                True: Controller.JOINT_TOLERANCE_SMALL,
+                False: Controller.JOINT_TOLERANCE_BIG,
+            }[(i == num_points-1) or (target.flag_cartesian)]
+            self.limb_r.move_to_joint_positions(point, threshold=tolerance)
 
-        # if new target has been set, run it
-        if self.targets is not None: 
-            print('New Target - Overriding Movement')
-            self.move()
+        if self.target_r is not None:
+            print('New Right Target - Overriding Movement')
+            self._move_right()
 
-        # set flag that movement has ended
-        self.moving = False
+        self.moving_r = False
 
         return None
 
