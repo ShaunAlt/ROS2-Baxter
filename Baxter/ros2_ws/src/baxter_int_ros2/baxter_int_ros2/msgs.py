@@ -15,6 +15,7 @@ Contains message type definitions used for type-hinting in ROS2.
 # Imports
 # =============================================================================
 
+from Baxter.ros2_ws.src.baxter_int_ros2.baxter_int_ros2 import _DATA
 from . import (
     # - typing
     _DATA,
@@ -75,6 +76,10 @@ from . import (
 
     # - baxter_int_ros2_support
     msgCameraData,
+
+    # - baxter_interface_msgs
+    msgEndpointTarget,
+    msgEndpointTargets,
 
     # - .
     ROS2_obj,
@@ -631,6 +636,15 @@ class Point(ROS2_msg, msgPoint):
             y = msg.y,
             z = msg.z
         )
+    
+    # ==============
+    # Create Message
+    def create_msg(self) -> msgPoint:
+        return msgPoint(
+            x = self.x,
+            y = self.y,
+            z = self.z
+        )
 
 # ====
 # Pose
@@ -723,6 +737,38 @@ class Pose(ROS2_msg, msgPose):
             orientation = Quaternion.from_msg(msg.orientation),
             skip_validation = True
         )
+    
+    # ==============
+    # Create Message
+    def create_msg(self) -> msgPose:
+        return msgPose(
+            position = self.position.create_msg(),
+            orientation = self.orientation.create_msg()
+        )
+    
+    # =======================
+    # Create from Coordinates
+    @classmethod
+    def from_coords(
+            cls,
+            pos: tuple[float, float, float],
+            ori: tuple[float, float, float, float]
+    ) -> 'Pose':
+        ''' Create `Pose` from Coordinate Values. '''
+
+        return Pose(
+            position = Point(
+                x = pos[0],
+                y = pos[1],
+                z = pos[2]
+            ),
+            orientation = Quaternion(
+                x = ori[0],
+                y = ori[1],
+                z = ori[2],
+                w = ori[3]
+            )
+        )
 
 # ==========
 # Quaternion
@@ -812,6 +858,16 @@ class Quaternion(ROS2_msg, msgQuaternion):
             y = msg.y,
             z = msg.z,
             w = msg.w
+        )
+    
+    # ==============
+    # Create Message
+    def create_msg(self) -> msgQuaternion:
+        return msgQuaternion(
+            x = self.x,
+            y = self.y,
+            z = self.z,
+            w = self.w
         )
 
 # ====
@@ -3374,6 +3430,181 @@ class CameraData(ROS2_msg, msgCameraData):
         _msg.height = self.height
         _msg.channels = self.channels
         return _msg
+
+# ==============
+# EndpointTarget
+class EndpointTarget(ROS2_msg, msgEndpointTarget):
+    '''
+    baxter_interface_msgs - EndpointTarget
+    -
+    Contains the data required for setting the endpoint target pose of a single
+    Limb.
+
+    Data
+    -
+    - pose : `Pose`
+        - `Pose` of the `Limb`.
+    - mode : `int`
+        - Mode to run in.
+
+    Constants
+    -
+    - MODE_CARTESIAN : `uint8`
+        - Option for `mode` that makes the controller move in a cartesian
+            (straight-line) motion.
+    - MODE_NORMAL : `uint8`
+        - Option for `mode` that makes the controller move in a normal (non-
+            cartesian) motion.
+    - MODE_SKIP : `uint8`
+        - Option for `mode` that will skip all path planning and simply move
+            the `Limb` to the final endpoint. Ignores all collision avoidance.
+    '''
+
+    # =========
+    # Constants
+    MODE_CARTESIAN: int = msgEndpointTarget.MODE_CARTESIAN
+    MODE_NORMAL: int = msgEndpointTarget.MODE_NORMAL
+    MODE_SKIP: int = msgEndpointTarget.MODE_SKIP
+
+    # ===========
+    # Constructor
+    def __init__(
+            self,
+            pose: Pose,
+            mode_cartesian: bool = False,
+            mode_skip: bool = False
+    ) -> None:
+        super().__init__()
+        self.pose = pose
+        self.mode = {
+            (True, False): EndpointTarget.MODE_CARTESIAN,
+            (False, True): EndpointTarget.MODE_SKIP,
+            (False, False): EndpointTarget.MODE_NORMAL,
+        }[(mode_cartesian, mode_skip)]
+
+    # ==================
+    # Motion Mode String
+    @property
+    def mode_str(self) -> str:
+        ''' Motion Mode String. '''
+        return {
+            EndpointTarget.MODE_CARTESIAN: 'Cartesian',
+            EndpointTarget.MODE_NORMAL: 'Normal',
+            EndpointTarget.MODE_SKIP: 'Skip',
+        }[self.mode]
+
+    # ===============
+    # Get Object Data
+    def _get_data(self, short: bool = False) -> _DATA:
+        return { # type: ignore
+            True: {
+                'pose': self.pose,
+                'mode': self.mode_str,
+            },
+            False: {
+                'pose': self.pose,
+                'mode': self.mode,
+                'mode_str': self.mode_str,
+                'mode_cartesian': self.mode == EndpointTarget.MODE_CARTESIAN,
+                'mode_normal': self.mode == EndpointTarget.MODE_NORMAL,
+                'mode_skip': self.mode == EndpointTarget.MODE_SKIP,
+            }
+        }[short]
+
+    # ==============
+    # Create Message
+    def create_msg(self) -> msgEndpointTarget:
+        return msgEndpointTarget(
+            pose = self.pose.create_msg(),
+            mode = self.mode
+        )
+
+# ===============
+# EndpointTargets
+class EndpointTargets(ROS2_msg, msgEndpointTargets):
+    '''
+    baxter_interface_msgs - EndpointTargets
+    -
+    Contains the data required for setting the endpoint targets of both `Limb`
+    objects.
+
+    Data
+    -
+    - limbs : `array[uint8]`
+        - `Limb` ID numbers.
+    - targets : `array[EndpointTarget]`
+        - List of the `EndpointTarget`, one for each `Limb` in the `limbs`
+            array.
+
+    Constants
+    -
+    - LIMB_L : `uint8`
+        - Left `Limb` ID number.
+    - LIMB_R : `uint8`
+        - Right `Limb` ID number.
+    '''
+
+    # =========
+    # Constants
+    LIMB_L: int = msgEndpointTargets.LIMB_L
+    LIMB_R: int = msgEndpointTargets.LIMB_R
+
+    # ===========
+    # Constructor
+    def __init__(
+            self,
+            target_l: Optional['EndpointTarget'] = None,
+            target_r: Optional['EndpointTarget'] = None
+    ) -> None:
+        '''
+        `EndpointTargets` Message Constructor
+        -
+        Creates the `EndpointTargets` custom message object.
+
+        Parameters
+        -
+        - target_l : `EndpointTarget | None`
+            - Defaults to `None`, which means the left `Limb` will not have a
+                target set. Otherwise, sets the left `Limb` target.
+        - target_r : `EndpointTarget | None`
+            - Defaults to `None`, which means the right `Limb` will not have a
+                target set. Otherwise, sets the right `Limb` target.
+
+        Returns
+        -
+        None
+        '''
+
+        # set limbs and targets
+        limbs: List[int] = []
+        targets: List[EndpointTarget] = []
+
+        if target_l is not None:
+            limbs.append(EndpointTargets.LIMB_L)
+            targets.append(target_l)
+        if target_r is not None:
+            limbs.append(EndpointTargets.LIMB_R)
+            targets.append(target_r)
+
+        super().__init__()
+        self.limbs = limbs
+        self.targets = targets
+
+    # ===============
+    # Get Object Data
+    def _get_data(self, short: bool = False) -> _DATA:
+        return {
+            'limbs': self.limbs,
+            'targets': self.targets,
+        }
+    
+    # ==============
+    # Create Message
+    def create_msg(self) -> msgEndpointTargets:
+        return msgEndpointTargets(
+            limbs = self.limbs,
+            targets = [t.create_msg() for t in self.targets]
+        )
 
 
 # =============================================================================

@@ -28,6 +28,7 @@ setup(
             'streamer = baxter_dev.streamer:main',
             'test_gripper = baxter_dev.gripper_test:main',
             'test_main = baxter_dev.main_test:main',
+            'sweeper = baxter_dev.sweeper:main',
         ],
     },
 )

@@ -30,10 +30,10 @@ from typing import (
 )
 
 # used for numpy arrays
-import numpy
+import numpy # type: ignore
 
 # used for image processing
-import cv2
+import cv2 # type: ignore
 
 # used for arrays
 from array import (
@@ -125,6 +125,10 @@ from std_msgs.msg import ( # type: ignore
 from baxter_int_ros2_support.msg import ( # type: ignore
     CameraData as msgCameraData,
 )
+from baxter_interface_msgs.msg import ( # type: ignore
+    EndpointTarget as msgEndpointTarget,
+    EndpointTargets as msgEndpointTargets,
+)
 
 # baxter services
 from baxter_core_msgs.srv import ( # type: ignore
@@ -149,7 +153,7 @@ except ImportError:
     from _weakrefset import WeakSet
 
 if TYPE_CHECKING:
-    from cv2.typing import (
+    from cv2.typing import ( # type: ignore
         MatLike,
     )
 else:
@@ -789,6 +793,7 @@ class Topics():
         ''' Limb Topics. '''
         LEFT: str = 'left'
         RIGHT: str = 'right'
+        MOVEIT: str = 'baxter_ros2/endpoint_targets'
         ALL: List[str] = [
             LEFT,
             RIGHT,
@@ -846,6 +851,8 @@ from .msgs import (
     Wrench as MSG_Wrench,
     # Custom messages
     CameraData as MSG_CameraData,
+    EndpointTarget as MSG_EndpointTarget,
+    EndpointTargets as MSG_EndpointTargets,
 )
 from .srvs import (
     # baxter_core_msgs

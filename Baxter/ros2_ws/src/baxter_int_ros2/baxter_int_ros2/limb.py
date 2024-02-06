@@ -45,6 +45,10 @@ from . import (
     # - sensor_msgs
     msgJointState,
 
+    # - baxter_interface_msgs
+    msgEndpointTarget,
+    msgEndpointTargets,
+
     # - .dataflow
     df_wait,
     Signal,
@@ -57,9 +61,12 @@ from . import (
 
     # - .msgs
     MSG_EndpointState,
+    MSG_EndpointTarget,
+    MSG_EndpointTargets,
     MSG_Float64,
     MSG_JointCommand,
     MSG_JointState,
+    MSG_Pose,
 )
 
 
@@ -172,6 +179,11 @@ class Limb(ROS2_Node):
         self._pub_timeout = self.create_pub(
             msgFloat64,
             self.topic_pub_joint_timeout
+        )
+        self.log('| - MoveIT Controller', 1)
+        self._pub_moveit = self.create_pub(
+            msgEndpointTargets,
+            self.topic_pub_moveit
         )
 
         _final_msg: str = str(self)
@@ -335,6 +347,13 @@ class Limb(ROS2_Node):
     def topic(self) -> str:
         ''' Base topic parent for `Limb`. '''
         return f'{Topics.Limb._PREFIX}/{self._topic}'
+    
+    # =====================================
+    # Topic - Publisher - MoveIT Controller
+    @property
+    def topic_pub_moveit(self) -> str:
+        ''' Topic used for publishing to MoveIT Controller. '''
+        return f'{Topics.Limb.MOVEIT}'
     
     # ===============================
     # Topic - Publisher - Speed Ratio
@@ -578,6 +597,48 @@ class Limb(ROS2_Node):
             'data_joint_w2': self.data_joint_w2,
         }
     
+    # ==============================
+    # Get Position and Endpoint Pose
+    def get_position_pose(self) -> str:
+        '''
+        Get Position and Endpoint Pose
+        -
+        Gets the position of each of the joints, as well as the endpoint pose
+        of the limb.
+
+        Parameters
+        -
+        None
+
+        Returns
+        -
+        None
+        '''
+
+        if None in [
+                self.data_endpoint,
+                self.data_joint_e0,
+                self.data_joint_e1,
+                self.data_joint_s0,
+                self.data_joint_s1,
+                self.data_joint_w0,
+                self.data_joint_w1,
+                self.data_joint_w2,
+        ]:
+            return "Invalid: Not Yet Read"
+        
+        return (
+            f'Endpoint Pose: {self.data_endpoint.pose}\n' \
+            + f'Joint Positions:\n' \
+                + f'\tE0: {self.data_joint_e0[0]}\n' \
+                + f'\tE1: {self.data_joint_e1[0]}\n' \
+                + f'\tS0: {self.data_joint_s0[0]}\n' \
+                + f'\tS1: {self.data_joint_s1[0]}\n' \
+                + f'\tW0: {self.data_joint_w0[0]}\n' \
+                + f'\tW1: {self.data_joint_w1[0]}\n' \
+                + f'\tW2: {self.data_joint_w2[0]}\n' \
+        )
+
     # =====================
     # Publish - Speed Ratio
     def pub_speed(
@@ -641,6 +702,60 @@ class Limb(ROS2_Node):
         # log publish success
         self.log(f'| - Set Joint Timeout to {timeout}', 1)
         self.log('| - Done', 1)
+
+    # ===================
+    # Set Endpoint Target
+    def set_endpoint(
+            self,
+            pose: MSG_Pose,
+            cartesian: bool = False,
+            skip: bool = False,
+            tab_increase: int = 0
+    ) -> None:
+        '''
+        Set Endpoint Target
+        -
+        Sets the endpoint target `Pose` of the `Limb`.
+
+        Parameters
+        -
+        - pose : `MSG_Pose`
+            - Target `Pose` to move the `Limb` endpoint to.
+        - cartesian : `bool`
+            - Flag for whether or not to use cartesian motion. Defaults to 
+                `False`.
+        - skip : `bool`
+            - Flag for whether or not to skip the path planning and only go to
+                the final endpoint. Skips all collision avoidance. Defaults to
+                `False`.
+        - tab_increase : `int`
+            - Number of tabs to increase the indentation of the command logs
+                by.
+
+        Returns
+        -
+        None
+        '''
+
+        # log publish
+        self.log(f'* {self.node_name} Set Endpoint Target', tab_increase)
+
+        # create message
+        self.log(f'| - Create Message', tab_increase+1)
+        msg = MSG_EndpointTargets(
+            target_l = MSG_EndpointTarget(
+                pose = pose,
+                mode_cartesian = cartesian,
+                mode_skip = skip
+            )
+        )
+
+        # publish
+        self.log(f'| - Publish Message: msg={msg}', tab_increase+1)
+        self._pub_moveit.publish(msg.create_msg())
+        
+        # log completion
+        self.log(f'| Done', tab_increase+1)
     
     # ===================
     # Set Joint Positions
