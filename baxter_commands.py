@@ -108,6 +108,7 @@ def create_srdf():
         + '|_______________________________________|\n'
     )
     input()
+    sudo_pwd = input('Enter the Password for the SUDO User:')
     tab()
     cmd('moveit_ws')
     cmd('cd `rospack find baxter_moveit_config`')
@@ -119,6 +120,7 @@ def create_srdf():
         + 'right_gripper > $temp'
     )
     cmd('sudo cp $temp config/baxter.srdf')
+    cmd(sudo_pwd)
     cmd('sudo chmod a=wr config/baxter.srdf')
     return
 

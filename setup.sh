@@ -158,6 +158,8 @@ cd $DIR
 # Explain next steps
 echo "
 Next Steps:
+| - Source all of the Aliases created:
+|   | - source ~/.bash_aliases
 | - Create the Baxter SRDF by running the following commands:
 |   | - run_srdf
 "
