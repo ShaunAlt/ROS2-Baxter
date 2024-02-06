@@ -150,18 +150,32 @@ build_workspaces() {
 }
 build_workspaces
 
-echo "Setting up Baxter SRDF" | S1
-cd_moveit | S2
-. devel/setup.bash | S2
-cd src/moveit_robots/baxter/baxter_moveit_config
-temp=$(mktemp)
-echo $PWD
-xacro --inorder $DIR/Baxter/moveit_ws/src/moveit_robots/baxter/baxter_moveit_config/config/baxter.srdf.xacro left_electric_gripper:=true right_electric_gripper:=true left_tip_name:=left_gripper right_tip_name:=right_gripper > $temp | S2
-sudo cp $temp $DIR/Baxter/moveit_ws/src/moveit_robots/baxter/baxter_moveit_config/config/baxter.srdf | S2
+# echo "Setting up Baxter SRDF" | S1
+# cd_moveit | S2
+# . devel/setup.bash | S2
+# cd src/moveit_robots/baxter/baxter_moveit_config
+# temp=$(mktemp)
+# echo $PWD
+# xacro --inorder $DIR/Baxter/moveit_ws/src/moveit_robots/baxter/baxter_moveit_config/config/baxter.srdf.xacro left_electric_gripper:=true right_electric_gripper:=true left_tip_name:=left_gripper right_tip_name:=right_gripper > $temp | S2
+# sudo cp $temp $DIR/Baxter/moveit_ws/src/moveit_robots/baxter/baxter_moveit_config/config/baxter.srdf | S2
 
 # Go back to repository root
 echo "| - Going back to Repository Root"
 cd $DIR
+
+# Explain next steps
+echo "
+Next Steps:
+| - Create the Baxter SRDF:
+|   | - Go into the \"moveit_ws/src/moveit_robots/baxter/baxter_moveit_config\"
+|   |   directory.
+|   | - Run the following command (on a single line):
+|   |   | - xacro --inorder \`rospack find 
+|   |   |   baxter_moveit_config\`/config/baxter.srdf.xacro 
+|   |   |   left_electric_gripper:=true right_electric_gripper:=true
+|   |   |   left_tip_name:=left_gripper right_tip_name:=right_gripper >
+|   |   |   config/baxter.srdf
+"
 
 # =============================================================================
 # End of File
