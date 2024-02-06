@@ -15,7 +15,6 @@ Contains message type definitions used for type-hinting in ROS2.
 # Imports
 # =============================================================================
 
-from Baxter.ros2_ws.src.baxter_int_ros2.baxter_int_ros2 import _DATA
 from . import (
     # - typing
     _DATA,
