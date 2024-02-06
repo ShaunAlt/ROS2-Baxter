@@ -121,10 +121,15 @@ def ros1_moveit():
         + '| - If any of the following errors occur, stop the launch\n' \
             + '|\tscript (CTRL+C) and re-run it (it will be the most\n' \
             + '|\trecent command run in the active terminal):\n' \
-            + '|\t| - "robot semantic description not found".\n' \
             + '|\t| - "group \'left_arm\' is not found".\n' \
             + '|\t| - "group \'right_arm\' is not found".\n' \
             + '|\t| - "could not connect to "move_group" action server.\n' \
+        + '| - If any of the following errors occur, stop the launch\n' \
+            + '|\tscript (CTRL+C), and run the command `roslaunch\n' \
+            + '|\tbaxter_moveit_config demo_baxter.launch`. Once the text\n' \
+            + '|\t"You can start planning now!" appears, quit that launch\n' \
+            + '|\tand re-run the previous command.\n' \
+            + '|\t| - "robot semantic description not found".\n' \
         + '| - Ignore any of the following errors:\n' \
             + '|\t| - "action client not connected".\n' \
         + '| - For all other errors, or continuously appearing errors that\n' \
