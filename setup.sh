@@ -70,6 +70,7 @@ create_aliases() {
         "alias run_all='cd ${DIR} && ./baxter_commands.py -a'"
         "alias run_bridge='cd ${DIR} && ./baxter_commands.py -b'"
         "alias run_moveit='cd ${DIR} && ./baxter_commands.py -m'"
+        "alias run_srdf='cd ${DIR} && ./baxter_commands.py -s'"
         "alias run_tuck='cd ${DIR} && ./baxter_commands.py -t'"
         "alias run_untuck='cd ${DIR} && ./baxter_commands.py -u'"
     )
@@ -150,15 +151,6 @@ build_workspaces() {
 }
 build_workspaces
 
-# echo "Setting up Baxter SRDF" | S1
-# cd_moveit | S2
-# . devel/setup.bash | S2
-# cd src/moveit_robots/baxter/baxter_moveit_config
-# temp=$(mktemp)
-# echo $PWD
-# xacro --inorder $DIR/Baxter/moveit_ws/src/moveit_robots/baxter/baxter_moveit_config/config/baxter.srdf.xacro left_electric_gripper:=true right_electric_gripper:=true left_tip_name:=left_gripper right_tip_name:=right_gripper > $temp | S2
-# sudo cp $temp $DIR/Baxter/moveit_ws/src/moveit_robots/baxter/baxter_moveit_config/config/baxter.srdf | S2
-
 # Go back to repository root
 echo "| - Going back to Repository Root"
 cd $DIR
@@ -167,14 +159,7 @@ cd $DIR
 echo "
 Next Steps:
 | - Create the Baxter SRDF by running the following commands:
-|   | - moveit_ws
-|   | - cd \`rospack find baxter_moveit_config\`
-|   | - temp=\$(mktemp)
-|   | - xacro --inorder \`rospack find baxter_moveit_config\`/config/baxter.srdf.xacro 
-|   |   left_electric_gripper:=true right_electric_gripper:=true
-|   |   left_tip_name:=left_gripper right_tip_name:=right_gripper > \$temp
-|   | - sudo cp \$temp config/baxter.srdf
-|   | - sudo chmod a=wr config/baxter.srdf
+|   | - run_srdf
 "
 
 # =============================================================================

@@ -82,6 +82,46 @@ def bridge():
     cmd('baxter_bridge')
     return
 
+# ==================
+# Create Baxter SRDF
+def create_srdf():
+    ''' Creates the Baxter SRDF. '''
+    print(
+        '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
+        + '|        Create the Baxter SRDF         |\n' \
+        + '| NOTE: THIS ONLY NEEDS TO BE RUN ONCE. |\n' \
+        + '|---------------------------------------|\n' \
+        + '| 1. Creates a new terminal tab.        |\n' \
+        + '| 1. Runs `moveit_ws`.                  |\n' \
+        + '| 2. Goes to the `baxter_moveit_config` |\n' \
+        + '|    directory.                         |\n' \
+        + '| 3. Create a temporary file.           |\n' \
+        + '| 4. Uses `xacro` to create the SRDF as |\n' \
+        + '|    a temporary file.                  |\n' \
+        + '| 5. Saves the temporary file as        |\n' \
+        + '|    `baxter.srdf`.                     |\n' \
+        + '| 6. Edits the modification rights of   |\n' \
+        + '|    `baxter.srdf` to allow read/write  |\n' \
+        + '|    access.                            |\n' \
+        + '|---------------------------------------|\n' \
+        + '|      Press `ENTER` Key to Start       |\n' \
+        + '|_______________________________________|\n'
+    )
+    input()
+    tab()
+    cmd('moveit_ws')
+    cmd('cd `rospack find baxter_moveit_config`')
+    cmd('temp=$(mktemp)')
+    cmd(
+        'xacro --inorder `rospack find baxter_moveit_config`/config/baxter.' \
+        + 'srdf.xacro left_electric_gripper:=true right_electric_gripper' \
+        + ':=true left_tip_name:=left_gripper right_tip_name:=' \
+        + 'right_gripper > $temp'
+    )
+    cmd('sudo cp $temp config/baxter.srdf')
+    cmd('sudo chmod a=wr config/baxter.srdf')
+    return
+
 # =============
 # ROS1 - MoveIT
 def ros1_moveit():
@@ -104,13 +144,16 @@ def ros1_moveit():
         + '|     - PYTHONPATH                    |\n' \
         + '|     - ROS_PACKAGE_PATH              |\n' \
         + '|     - ROSLISP_PACKAGE_DIRECTORIES   |\n' \
-        + '|  8. Launches the `move_group` and   |\n' \
+        + '|  8. Sets the Robot Semantic         |\n' \
+        + '|     Description (SRDF) File         |\n' \
+        + '|     Parameter.                      |\n' \
+        + '|  9. Launches the `move_group` and   |\n' \
         + '|     `controller` moveit files.      |\n' \
-        + '|  9. Once the `move_group` file has  |\n' \
+        + '| 10. Once the `move_group` file has  |\n' \
         + '|     launched, press `ENTER` after   |\n' \
         + '|     green text appears stating      |\n' \
         + '|     "You can start planning now!".  |\n' \
-        + '| 10. Once the line "MoveIT           |\n' \
+        + '| 11. Once the line "MoveIT           |\n' \
         + '|     Controller Ready" is printed,   |\n' \
         + '|     you can start sending it data.  |\n' \
         + '|-------------------------------------|\n' \
@@ -146,10 +189,23 @@ def ros1_moveit():
     cmd('cd_ros1')
     cmd('export CMAKE_PREFIX_PATH="${PWD}/devel:${CMAKE_PREFIX_PATH}"')
     cmd('export LD_LIBRARY_PATH="${PWD}/devel/lib:${LD_LIBRARY_PATH}"')
-    cmd('export PKG_CONFIG_PATH="${PWD}/devel/lib/pkgconfig:${PKG_CONFIG_PATH}"')
-    cmd('export PYTHONPATH="${PWD}/devel/lib/python3/dist-packages:${PYTHONPATH}"')
+    cmd(
+        'export PKG_CONFIG_PATH="${PWD}/devel/lib/pkgconfig:$' \
+        + '{PKG_CONFIG_PATH}"'
+    )
+    cmd(
+        'export PYTHONPATH="${PWD}/devel/lib/python3/dist-packages:$' \
+        + '{PYTHONPATH}"'
+    )
     cmd('export ROS_PACKAGE_PATH="${PWD}/src:${ROS_PACKAGE_PATH}"')
-    cmd('export ROSLISP_PACKAGE_DIRECTORIES="${PWD}/devel/share/common-lisp:${ROSLISP_PACKAGE_DIRECTORIES}"')
+    cmd(
+        'export ROSLISP_PACKAGE_DIRECTORIES="${PWD}/devel/share/common-lisp:' \
+        + '${ROSLISP_PACKAGE_DIRECTORIES}"'
+    )
+    cmd(
+        'rosparam set /robot_description_semantic -t `rospack find ' \
+        + 'baxter_moveit_config`/config/baxter.srdf'
+    )
     cmd('roslaunch baxter_dev ros2_moveit.launch')
     return
 
@@ -194,18 +250,6 @@ def main() -> None:
         help = 'Equivalent of "-u -b -m"'
     )
     parser.add_argument(
-        '-u', 
-        '--untuck', 
-        action = 'store_true',
-        help = 'Untucks the arms of the Baxter robot.'
-    )
-    parser.add_argument(
-        '-t', 
-        '--tuck', 
-        action = 'store_true',
-        help = 'Tucks the arms of the Baxter robot.'
-    )
-    parser.add_argument(
         '-b', 
         '--bridge', 
         action = 'store_true',
@@ -217,8 +261,27 @@ def main() -> None:
         action = 'store_true',
         help = 'Creates the ROS1 Baxter MoveIT Nodes.'
     )
+    parser.add_argument(
+        '-s',
+        '--srdf',
+        action = 'store_true',
+        help = 'Creates the Baxter.SRDF File. RUN ONLY ONCE.'
+    )
+    parser.add_argument(
+        '-t', 
+        '--tuck', 
+        action = 'store_true',
+        help = 'Tucks the arms of the Baxter robot.'
+    )
+    parser.add_argument(
+        '-u', 
+        '--untuck', 
+        action = 'store_true',
+        help = 'Untucks the arms of the Baxter robot.'
+    )
     args = parser.parse_args()
 
+    if args.srdf: create_srdf()
     if args.tuck: ros1_tuck(True)
     if args.untuck or args.all: ros1_tuck(False)
     if args.bridge or args.all: bridge()
