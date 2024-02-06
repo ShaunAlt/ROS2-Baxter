@@ -750,8 +750,8 @@ class Pose(ROS2_msg, msgPose):
     @classmethod
     def from_coords(
             cls,
-            pos: tuple[float, float, float],
-            ori: tuple[float, float, float, float]
+            pos: Tuple[float, float, float],
+            ori: Tuple[float, float, float, float]
     ) -> 'Pose':
         ''' Create `Pose` from Coordinate Values. '''
 
