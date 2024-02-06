@@ -166,15 +166,15 @@ cd $DIR
 # Explain next steps
 echo "
 Next Steps:
-| - Create the Baxter SRDF:
-|   | - Go into the \"moveit_ws/src/moveit_robots/baxter/baxter_moveit_config\"
-|   |   directory.
-|   | - Run the following command (on a single line):
-|   |   | - xacro --inorder \`rospack find 
-|   |   |   baxter_moveit_config\`/config/baxter.srdf.xacro 
-|   |   |   left_electric_gripper:=true right_electric_gripper:=true
-|   |   |   left_tip_name:=left_gripper right_tip_name:=right_gripper >
-|   |   |   config/baxter.srdf
+| - Create the Baxter SRDF by running the following commands:
+|   | - moveit_ws
+|   | - cd \`rospack find baxter_moveit_config\`
+|   | - temp=\$(mktemp)
+|   | - xacro --inorder \`rospack find baxter_moveit_config\`/config/baxter.srdf.xacro 
+|   |   left_electric_gripper:=true right_electric_gripper:=true
+|   |   left_tip_name:=left_gripper right_tip_name:=right_gripper > \$temp
+|   | - sudo cp \$temp config/baxter.srdf
+|   | - sudo chmod a=wr config/baxter.srdf
 "
 
 # =============================================================================
