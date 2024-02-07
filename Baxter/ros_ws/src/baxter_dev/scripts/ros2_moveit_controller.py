@@ -722,7 +722,7 @@ class Controller():
 
         # create plan
         plan: _PLAN = self.plan(
-            "l",
+            "r",
             target.pose,
             cartesian = target.flag_cartesian,
             skip_to_end = target.flag_skip
