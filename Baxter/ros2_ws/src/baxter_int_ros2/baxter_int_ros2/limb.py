@@ -769,12 +769,13 @@ class Limb(ROS2_Node):
         self._pub_moveit.publish(msg.create_msg())
         
         # log completion
-        df_wait(
-            lambda: self.data_endpoint.pose.check_close(pose),
-            self,
-            timeout = timeout,
-            timeout_msg = f'Limb {self} Set Endpoint Timeout'
-        )
+        if timeout > 0:
+            df_wait(
+                lambda: self.data_endpoint.pose.check_close(pose),
+                self,
+                timeout = timeout,
+                timeout_msg = f'Limb {self} Set Endpoint Timeout'
+            )
         return True
     
     # ===================

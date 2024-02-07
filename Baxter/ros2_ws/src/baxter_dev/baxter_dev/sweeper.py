@@ -103,12 +103,12 @@ class POSES():
     # Implement Attach/Detach Pose
     class ATTACH_DETACH():
         L = MSG_Pose.from_coords(
-            (0.0, 0.0, 0.0,),
-            (0.0, 0.0, 0.0, 0.0,)
+            (1.1, 0.1, 0.4,),
+            (0.04, 0.5, 0.06, 0.8630179604,)
         )
         R = MSG_Pose.from_coords(
-            (0.0, 0.0, 0.0,),
-            (0.0, 0.0, 0.0, 0.0,)
+            (1.1, -0.1, 0.4,),
+            (0.04, 0.5, 0.06, 0.8630179604,)
         )
 
 
@@ -218,6 +218,10 @@ class Robot():
                 'Left Limb Position + Pose:\n\t' \
                 + self.limb_l.get_position_pose().replace('\n', '\n\t')
             )
+            print(
+                'Right Limb Position + Pose:\n\t' \
+                + self.limb_r.get_position_pose().replace('\n', '\n\t')
+            )
 
     # =====================================
     # State-Change Callback - Left Shoulder
@@ -233,10 +237,9 @@ class Robot():
     def _state_change_r_forearm_ok(self, val: bool) -> None:
         ''' State-Change Callback - Right Forearm OK Button. '''
         if val:
-            print(
-                'Right Limb Position + Pose:\n\t' \
-                + self.limb_r.get_position_pose().replace('\n', '\n\t')
-            )
+            print('Moving Limbs to Attach/Detach Position.')
+            self.move_attach()
+            print('Done moving limbs to ATTACH_DETACH.')
 
     # ======================================
     # State-Change Callback - Right Shoulder
@@ -256,8 +259,6 @@ class Robot():
             POSES.ATTACH_DETACH.R,
             skip_l = True,
             skip_r = True,
-            timeout_l = 10,
-            timeout_r = 10
         )
             
     # ===========================================
@@ -269,8 +270,6 @@ class Robot():
             POSES.CAM_TABLE.R,
             skip_l = True,
             skip_r = True,
-            timeout_l = 10,
-            timeout_r = 10
         )
 
     # =================================
@@ -282,8 +281,6 @@ class Robot():
             POSES.INIT.R,
             skip_l = True,
             skip_r = True,
-            timeout_l = 10,
-            timeout_r = 10
         )
 
 
