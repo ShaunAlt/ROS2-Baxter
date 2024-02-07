@@ -711,8 +711,9 @@ class Limb(ROS2_Node):
             pose: MSG_Pose,
             cartesian: bool = False,
             skip: bool = False,
+            timeout: int = 0,
             tab_increase: int = 0
-    ) -> None:
+    ) -> bool:
         '''
         Set Endpoint Target
         -
@@ -729,13 +730,16 @@ class Limb(ROS2_Node):
             - Flag for whether or not to skip the path planning and only go to
                 the final endpoint. Skips all collision avoidance. Defaults to
                 `False`.
+        - timeout : `int`
+            - Timeout for the movement. Defaults to 0, which means no limit.
         - tab_increase : `int`
             - Number of tabs to increase the indentation of the command logs
                 by.
 
         Returns
         -
-        None
+        `bool`
+            - Whether or not the movement was successful.
         '''
 
         # log publish
@@ -765,7 +769,13 @@ class Limb(ROS2_Node):
         self._pub_moveit.publish(msg.create_msg())
         
         # log completion
-        self.log(f'| Done', tab_increase+1)
+        df_wait(
+            lambda: self.data_endpoint.pose.check_close(pose),
+            self,
+            timeout = timeout,
+            timeout_msg = f'Limb {self} Set Endpoint Timeout'
+        )
+        return True
     
     # ===================
     # Set Joint Positions

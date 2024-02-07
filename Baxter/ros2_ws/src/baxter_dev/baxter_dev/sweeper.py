@@ -65,13 +65,21 @@ class POSES():
     # ===================
     # Initialization Pose
     class INIT():
+        # L = MSG_Pose.from_coords(
+        #     (0.58, 0.19, 0.10,),
+        #     (0.14244837956004497, 0.9894134084748842, 0.00946413021209492, 0.02607674308954108,)
+        # )
+        # R = MSG_Pose.from_coords(
+        #     (0.58, -0.19, 0.10,),
+        #     (-0.16220815973292532, 0.9860792864580276, -0.013972391910600295, 0.033777596107207875,)
+        # )
         L = MSG_Pose.from_coords(
-            (0.58, 0.19, 0.10,),
-            (0.14244837956004497, 0.9894134084748842, 0.00946413021209492, 0.02607674308954108,)
+            (0.6, 0.2, 0.1,),
+            (0.0, 1.0, 0.0, 0.0,)
         )
         R = MSG_Pose.from_coords(
-            (0.58, -0.19, 0.10,),
-            (-0.16220815973292532, 0.9860792864580276, -0.013972391910600295, 0.033777596107207875,)
+            (0.6, -0.2, 0.1,),
+            (0.0, 1.0, 0.0, 0.0,)
         )
 
     # ======================
@@ -172,13 +180,10 @@ class Robot():
     # State-Change Callback - Left Shoulder
     def _state_change_l_shoulder(self, val: bool) -> None:
         ''' State-Change Callback - Left Shoulder Button. '''
-        if val: self.limb_l.set_endpoint(POSES.INIT.L, skip=True)
-
-    # ======================================
-    # State-Change Callback - Right Shoulder
-    def _state_change_r_shoulder(self, val: bool) -> None:
-        ''' State-Change Callback - Right Shoulder Button. '''
-        if val: self.limb_r.set_endpoint(POSES.INIT.R, skip=True)
+        if val: 
+            print('Moving Left Limb to Initialize Position')
+            self.limb_l.set_endpoint(POSES.INIT.L, skip=True, timeout=10)
+            print('Done moving left limb to INIT.')
 
     # ========================================
     # State-Change Callback - Right Forearm OK
@@ -189,6 +194,15 @@ class Robot():
                 'Right Limb Position + Pose:\n\t' \
                 + self.limb_r.get_position_pose().replace('\n', '\n\t')
             )
+
+    # ======================================
+    # State-Change Callback - Right Shoulder
+    def _state_change_r_shoulder(self, val: bool) -> None:
+        ''' State-Change Callback - Right Shoulder Button. '''
+        if val: 
+            print('Moving Right Limb to Initialize Position')
+            self.limb_r.set_endpoint(POSES.INIT.R, skip=True, timeout=10)
+            print('Done moving right limb to INIT.')
 
 
 # =============================================================================

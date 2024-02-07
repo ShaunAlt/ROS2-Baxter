@@ -774,6 +774,23 @@ class Pose(ROS2_msg, msgPose):
             skip_validation = True
         )
 
+    # ==============
+    # Pose Closeness
+    def check_close(self, p: 'Pose', threshold=0.01) -> bool:
+        ''' Check how close 2 `Pose` objects are. '''
+
+        return (
+            sum([
+                abs(self.position.x - p.position.x),
+                abs(self.position.y - p.position.y),
+                abs(self.position.z - p.position.z),
+                abs(self.orientation.x - p.orientation.x),
+                abs(self.orientation.y - p.orientation.y),
+                abs(self.orientation.z - p.orientation.z),
+                abs(self.orientation.w - p.orientation.w),
+            ]) < threshold
+        )
+
 # ==========
 # Quaternion
 class Quaternion(ROS2_msg, msgQuaternion):
