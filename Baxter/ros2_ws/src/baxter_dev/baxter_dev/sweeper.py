@@ -66,36 +66,36 @@ class POSES():
     # Initialization Pose
     class INIT():
         L = MSG_Pose.from_coords(
-            (0, 0, 0),
-            (0, 0, 0, 0)
+            (0.0, 0.0, 0.0,),
+            (0.0, 0.0, 0.0, 0.0,)
         )
         R = MSG_Pose.from_coords(
-            (0, 0, 0),
-            (0, 0, 0, 0)
+            (0.0, 0.0, 0.0,),
+            (0.0, 0.0, 0.0, 0.0,)
         )
 
     # ======================
     # Camera View Table Pose
     class CAM_TABLE():
         L = MSG_Pose.from_coords(
-            (0, 0, 0),
-            (0, 0, 0, 0)
+            (0.0, 0.0, 0.0,),
+            (0.0, 0.0, 0.0, 0.0,)
         )
         R = MSG_Pose.from_coords(
-            (0, 0, 0),
-            (0, 0, 0, 0)
+            (0.0, 0.0, 0.0,),
+            (0.0, 0.0, 0.0, 0.0,)
         )
 
     # ============================
     # Implement Attach/Detach Pose
     class ATTACH_DETACH():
         L = MSG_Pose.from_coords(
-            (0, 0, 0),
-            (0, 0, 0, 0)
+            (0.0, 0.0, 0.0,),
+            (0.0, 0.0, 0.0, 0.0,)
         )
         R = MSG_Pose.from_coords(
-            (0, 0, 0),
-            (0, 0, 0, 0)
+            (0.0, 0.0, 0.0,),
+            (0.0, 0.0, 0.0, 0.0,)
         )
 
 
