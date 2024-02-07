@@ -577,30 +577,32 @@ class Point(ROS2_msg, msgPoint):
             self,
             x: float,
             y: float,
-            z: float
+            z: float,
+            skip_validation: bool = False
     ) -> None:
         # validate data
-        for _str in (
-                [
-                    self._validate_input(
-                        x,
-                        self.TYPE_FLOAT64
-                    ),
-                    self._validate_input(
-                        y,
-                        self.TYPE_FLOAT64
-                    ),
-                    self._validate_input(
-                        z,
-                        self.TYPE_FLOAT64
+        if not skip_validation:
+            for _str in (
+                    [
+                        self._validate_input(
+                            x,
+                            self.TYPE_FLOAT64
+                        ),
+                        self._validate_input(
+                            y,
+                            self.TYPE_FLOAT64
+                        ),
+                        self._validate_input(
+                            z,
+                            self.TYPE_FLOAT64
+                        )
+                    ]
+            ):
+                if _str != '':
+                    raise ValueError(
+                        f'ROS2-MSG Point Construct: {_str}'
                     )
-                ]
-        ):
-            if _str != '':
-                raise ValueError(
-                    f'ROS2-MSG Point Construct: {_str}'
-                )
-        
+            
         # construct instance
         super().__init__()
         self.x = x
@@ -759,14 +761,17 @@ class Pose(ROS2_msg, msgPose):
             position = Point(
                 x = pos[0],
                 y = pos[1],
-                z = pos[2]
+                z = pos[2],
+                skip_validation = True
             ),
             orientation = Quaternion(
                 x = ori[0],
                 y = ori[1],
                 z = ori[2],
-                w = ori[3]
-            )
+                w = ori[3],
+                skip_validation = True
+            ),
+            skip_validation = True
         )
 
 # ==========
@@ -792,34 +797,36 @@ class Quaternion(ROS2_msg, msgQuaternion):
             x: float,
             y: float,
             z: float,
-            w: float
+            w: float,
+            skip_validation: bool = False
     ) -> None:
         # validate data
-        for _str in (
-                [
-                    self._validate_input(
-                        x,
-                        self.TYPE_FLOAT64
-                    ),
-                    self._validate_input(
-                        y,
-                        self.TYPE_FLOAT64
-                    ),
-                    self._validate_input(
-                        z,
-                        self.TYPE_FLOAT64
-                    ),
-                    self._validate_input(
-                        w,
-                        self.TYPE_FLOAT64
+        if not skip_validation:
+            for _str in (
+                    [
+                        self._validate_input(
+                            x,
+                            self.TYPE_FLOAT64
+                        ),
+                        self._validate_input(
+                            y,
+                            self.TYPE_FLOAT64
+                        ),
+                        self._validate_input(
+                            z,
+                            self.TYPE_FLOAT64
+                        ),
+                        self._validate_input(
+                            w,
+                            self.TYPE_FLOAT64
+                        )
+                    ]
+            ):
+                if _str != '':
+                    raise ValueError(
+                        f'ROS2-MSG Quarternion Construct: {_str}'
                     )
-                ]
-        ):
-            if _str != '':
-                raise ValueError(
-                    f'ROS2-MSG Quarternion Construct: {_str}'
-                )
-            
+                
         # construct instance
         super().__init__()
         self.x = x
