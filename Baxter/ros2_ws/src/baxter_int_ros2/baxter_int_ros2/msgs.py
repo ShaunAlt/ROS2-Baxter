@@ -776,7 +776,7 @@ class Pose(ROS2_msg, msgPose):
 
     # ==============
     # Pose Closeness
-    def check_close(self, p: 'Pose', threshold=0.01) -> bool:
+    def check_close(self, p: 'Pose', threshold=0.1) -> bool:
         ''' Check how close 2 `Pose` objects are. '''
 
         return (

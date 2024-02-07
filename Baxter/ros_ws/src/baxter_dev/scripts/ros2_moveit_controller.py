@@ -591,7 +591,7 @@ class Controller():
     @target_l.setter
     def target_l(self, data: Optional[MSG_EndpointTarget]) -> None:
         self._target_l = data
-        if data is not None:
+        if data is not None and not self.moving_l:
             self._move_left()
 
     # ================
@@ -603,7 +603,7 @@ class Controller():
     @target_r.setter
     def target_r(self, data: Optional[MSG_EndpointTarget]) -> None:
         self._target_r = data
-        if data is not None:
+        if data is not None and not self.moving_r:
             self._move_right()
 
     # ====================================================
@@ -614,10 +614,8 @@ class Controller():
         # get message data
         targets = MSG_EndpointTargets(msg)
         print(f'Received Data: {repr(targets)}')
-        def set_l(): 
-            if not self.moving_l: self.target_l = targets.target_l
-        def set_r(): 
-            if not self.moving_r: self.target_r = targets.target_r
+        def set_l(): self.target_l = targets.target_l
+        def set_r(): self.target_r = targets.target_r
         threads: List[threading.Thread] = [
             threading.Thread(target=set_l),
             threading.Thread(target=set_r),
