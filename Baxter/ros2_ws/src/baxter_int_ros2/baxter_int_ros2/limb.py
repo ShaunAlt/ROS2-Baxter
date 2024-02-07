@@ -628,7 +628,8 @@ class Limb(ROS2_Node):
             return "Invalid: Not Yet Read"
         
         return (
-            f'Endpoint Pose: {self.data_endpoint.pose}\n' \
+            f'Endpoint Pose:\n\t' \
+            + repr(self.data_endpoint.pose).replace('\n', '\n\t') + '\n' \
             + f'Joint Positions:\n' \
                 + f'\tE0: {self.data_joint_e0[0]}\n' \
                 + f'\tE1: {self.data_joint_e1[0]}\n' \
@@ -742,13 +743,22 @@ class Limb(ROS2_Node):
 
         # create message
         self.log(f'| - Create Message', tab_increase+1)
-        msg = MSG_EndpointTargets(
-            target_l = MSG_EndpointTarget(
-                pose = pose,
-                mode_cartesian = cartesian,
-                mode_skip = skip
+        if 'left' in self.topic:
+            msg = MSG_EndpointTargets(
+                target_l = MSG_EndpointTarget(
+                    pose = pose,
+                    mode_cartesian = cartesian,
+                    mode_skip = skip
+                )
             )
-        )
+        else:
+            msg = MSG_EndpointTargets(
+                target_r = MSG_EndpointTarget(
+                    pose = pose,
+                    mode_cartesian = cartesian,
+                    mode_skip = skip
+                )
+            )
 
         # publish
         self.log(f'| - Publish Message: msg={msg}', tab_increase+1)

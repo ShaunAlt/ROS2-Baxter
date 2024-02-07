@@ -613,6 +613,7 @@ class Controller():
 
         # get message data
         targets = MSG_EndpointTargets(msg)
+        print(f'Received Data: {repr(targets)}')
         def set_l(): 
             if not self.moving_l: self.target_l = targets.target_l
         def set_r(): 
