@@ -681,6 +681,7 @@ class Controller():
             cartesian = target.flag_cartesian,
             skip_to_end = target.flag_skip
         )
+        rospy.loginfo(f'Left Target Plan: {plan}')
         num_points = len(plan)
 
         for i, point in enumerate(plan):
@@ -691,6 +692,7 @@ class Controller():
                 False: Controller.JOINT_TOLERANCE_BIG,
             }[(i == num_points-1) or (target.flag_cartesian)]
             self.limb_l.move_to_joint_positions(point, threshold=tolerance)
+            rospy.loginfo(f'Left Target Motion: Step {i+1}/{num_points} Done')
 
         if self.target_l is not None:
             rospy.loginfo('New Left Target - Overriding Movement')
@@ -725,6 +727,7 @@ class Controller():
             cartesian = target.flag_cartesian,
             skip_to_end = target.flag_skip
         )
+        rospy.loginfo(f'Right Target Plan: {plan}')
         num_points = len(plan)
 
         for i, point in enumerate(plan):
@@ -735,6 +738,7 @@ class Controller():
                 False: Controller.JOINT_TOLERANCE_BIG,
             }[(i == num_points-1) or (target.flag_cartesian)]
             self.limb_r.move_to_joint_positions(point, threshold=tolerance)
+            rospy.loginfo(f'Right Target Motion: Step {i+1}/{num_points} Done')
 
         if self.target_r is not None:
             rospy.loginfo('New Right Target - Overriding Movement')
