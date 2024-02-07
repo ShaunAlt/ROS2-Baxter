@@ -141,7 +141,16 @@ class Robot():
     # Nodes List
     @property
     def nodes(self) -> List[ROS2_Node]:
-        return []
+        return [
+            self.cam_l,
+            self.cam_r,
+            self.dig_l_shoulder,
+            self.dig_l_forearm_ok,
+            self.dig_r_shoulder,
+            self.dig_r_forearm_ok,
+            self.limb_l,
+            self.limb_r,
+        ]
 
     # =======================================
     # State-Change Callback - Left Forearm OK
@@ -175,6 +184,7 @@ def main(args: None = None):
         + '| - Left Hand Raw Camera Data: left_hand_camera/image_data\n' \
         + '| - Right Hand Raw Camera Data: right_hand_camera/image_data\n' \
     )
+    rclpy.init()
     r = Robot()
     _exec = rclpy.executors.MultiThreadedExecutor()
     for node in r.nodes:
