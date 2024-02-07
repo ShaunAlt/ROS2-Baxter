@@ -66,12 +66,12 @@ class POSES():
     # Initialization Pose
     class INIT():
         L = MSG_Pose.from_coords(
-            (0.0, 0.0, 0.0,),
-            (0.0, 0.0, 0.0, 0.0,)
+            (0.58, 0.19, 0.10,),
+            (0.0, 0.0, 0.0, 1.0,)
         )
         R = MSG_Pose.from_coords(
-            (0.0, 0.0, 0.0,),
-            (0.0, 0.0, 0.0, 0.0,)
+            (0.58, -0.19, 0.10,),
+            (0.0, 0.0, 0.0, 1.0,)
         )
 
     # ======================
@@ -118,10 +118,10 @@ class Robot():
         self.cam_r = Camera(Topics.Camera.RIGHT)
 
         # create digital ios
-        self.dig_l_shoulder = DigitalIO(Topics.DigitalIO.LEFT_SHOULDER_BUTTON)
         self.dig_l_forearm_ok = DigitalIO(Topics.DigitalIO.LEFT_BUTTON_OK)
-        self.dig_r_shoulder = DigitalIO(Topics.DigitalIO.RIGHT_SHOULDER_BUTTON)
+        self.dig_l_shoulder = DigitalIO(Topics.DigitalIO.LEFT_SHOULDER_BUTTON)
         self.dig_r_forearm_ok = DigitalIO(Topics.DigitalIO.RIGHT_BUTTON_OK)
+        self.dig_r_shoulder = DigitalIO(Topics.DigitalIO.RIGHT_SHOULDER_BUTTON)
 
         # create limbs
         self.limb_l = Limb(Topics.Limb.LEFT)
@@ -131,8 +131,14 @@ class Robot():
         self.dig_l_forearm_ok.state_changed.connect(
             self._state_change_l_forearm_ok
         )
+        self.dig_l_shoulder.state_changed.connect(
+            self._state_change_l_shoulder
+        )
         self.dig_r_forearm_ok.state_changed.connect(
             self._state_change_r_forearm_ok
+        )
+        self.dig_r_shoulder.state_changed.connect(
+            self._state_change_r_shoulder
         )
 
         return None
@@ -144,10 +150,10 @@ class Robot():
         return [
             self.cam_l,
             self.cam_r,
-            self.dig_l_shoulder,
             self.dig_l_forearm_ok,
-            self.dig_r_shoulder,
+            self.dig_l_shoulder,
             self.dig_r_forearm_ok,
+            self.dig_r_shoulder,
             self.limb_l,
             self.limb_r,
         ]
@@ -161,6 +167,18 @@ class Robot():
                 'Left Limb Position + Pose:\n\t' \
                 + self.limb_l.get_position_pose().replace('\n', '\n\t')
             )
+
+    # =====================================
+    # State-Change Callback - Left Shoulder
+    def _state_change_l_shoulder(self, val: bool) -> None:
+        ''' State-Change Callback - Left Shoulder Button. '''
+        if val: self.limb_l.set_endpoint(POSES.INIT.L, skip=True)
+
+    # ======================================
+    # State-Change Callback - Right Shoulder
+    def _state_change_r_shoulder(self, val: bool) -> None:
+        ''' State-Change Callback - Right Shoulder Button. '''
+        if val: self.limb_r.set_endpoint(POSES.INIT.R, skip=True)
 
     # ========================================
     # State-Change Callback - Right Forearm OK
