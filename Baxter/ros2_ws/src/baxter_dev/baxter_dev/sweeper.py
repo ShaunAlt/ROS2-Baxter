@@ -59,6 +59,15 @@ else:
         Topics,
     )
 
+#!TODO: For Sweeping the Table, Keep Quarternion Angles:
+'''
+X, Z = 0
+Y = 1 <- Straight Ahead
+Slowly change W and Y (so the square sum is 1) to make the angle left and
+    right.
+Y will always be positive, W between -1 and 1.
+'''
+
 
 # =============================================================================
 # Preset Poses
