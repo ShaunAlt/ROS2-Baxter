@@ -20,9 +20,13 @@ robot to sweep up objects on a pre-set table.
 import sys
 # used for type hinting
 from typing import (
+    Any,
     List,
     TYPE_CHECKING,
 )
+
+# used for multi-threading
+from threading import Thread
 
 # used for ros2 python connection
 import rclpy # type: ignore
@@ -86,12 +90,12 @@ class POSES():
     # Camera View Table Pose
     class CAM_TABLE():
         L = MSG_Pose.from_coords(
-            (0.0, 0.0, 0.0,),
-            (0.0, 0.0, 0.0, 0.0,)
+            (0.6, 0.7, 0.2,),
+            (0.0, 1.0, 0.0, 0.0,)
         )
         R = MSG_Pose.from_coords(
-            (0.0, 0.0, 0.0,),
-            (0.0, 0.0, 0.0, 0.0,)
+            (0.5, 0.0, 0.5,),
+            (0.0, 1.0, 0.0, 0.0,)
         )
 
     # ============================
@@ -166,6 +170,44 @@ class Robot():
             self.limb_r,
         ]
 
+    # ================================
+    # Move Limbs to Specific Positions
+    def _move_limbs(
+            self,
+            target_l: MSG_Pose,
+            target_r: MSG_Pose,
+            cartesian_l: bool = False,
+            skip_l: bool = False,
+            cartesian_r: bool = False,
+            skip_r: bool = False,
+            timeout_l: int = 0,
+            timeout_r: int = 0
+    ) -> None:
+        ''' Move Limbs to Specific Positions. '''
+
+        t = [
+            Thread(
+                target=self.limb_l.set_endpoint, 
+                args=(
+                    target_l, 
+                    cartesian_l,
+                    skip_l,
+                    timeout_l,
+                )
+            ),
+            Thread(
+                target=self.limb_r.set_endpoint,
+                args=(
+                    target_r,
+                    cartesian_r,
+                    skip_r,
+                    timeout_r
+                )
+            )
+        ]
+        for _t in t: _t.start()
+        for _t in t: _t.join()
+
     # =======================================
     # State-Change Callback - Left Forearm OK
     def _state_change_l_forearm_ok(self, val: bool) -> None:
@@ -181,9 +223,9 @@ class Robot():
     def _state_change_l_shoulder(self, val: bool) -> None:
         ''' State-Change Callback - Left Shoulder Button. '''
         if val: 
-            print('Moving Left Limb to Initialize Position')
-            self.limb_l.set_endpoint(POSES.INIT.L, skip=True, timeout=10)
-            print('Done moving left limb to INIT.')
+            print('Moving Limbs to Initialize Position')
+            self.move_init()
+            print('Done moving limbs to INIT.')
 
     # ========================================
     # State-Change Callback - Right Forearm OK
@@ -200,9 +242,48 @@ class Robot():
     def _state_change_r_shoulder(self, val: bool) -> None:
         ''' State-Change Callback - Right Shoulder Button. '''
         if val: 
-            print('Moving Right Limb to Initialize Position')
-            self.limb_r.set_endpoint(POSES.INIT.R, skip=True, timeout=10)
-            print('Done moving right limb to INIT.')
+            print('Moving Limbs to Camera Position')
+            self.move_camera()
+            print('Done moving limbs to CAM_TABLE.')
+            
+    # ====================================
+    # Move Limbs to Attach/Detach Position
+    def move_attach(self) -> None:
+        ''' Move Limbs to Attach/Detach Position. '''
+        self._move_limbs(
+            POSES.ATTACH_DETACH.L,
+            POSES.ATTACH_DETACH.R,
+            skip_l = True,
+            skip_r = True,
+            timeout_l = 10,
+            timeout_r = 10
+        )
+            
+    # ===========================================
+    # Move Limbs to Camera Table Capture Position
+    def move_camera(self) -> None:
+        ''' Move Limbs to Camera Table Capture Position. '''
+        self._move_limbs(
+            POSES.CAM_TABLE.L,
+            POSES.CAM_TABLE.R,
+            skip_l = True,
+            skip_r = True,
+            timeout_l = 10,
+            timeout_r = 10
+        )
+
+    # =================================
+    # Move Limbs to Initialize Position
+    def move_init(self) -> None:
+        ''' Move Limbs to Initialize Position. '''
+        self._move_limbs(
+            POSES.INIT.L,
+            POSES.INIT.R,
+            skip_l = True,
+            skip_r = True,
+            timeout_l = 10,
+            timeout_r = 10
+        )
 
 
 # =============================================================================
@@ -217,6 +298,7 @@ def main(args: None = None):
         + '| - Right Hand Raw Camera Data: right_hand_camera/image_data\n' \
     )
     rclpy.init()
+    print('Creating Robot Nodes')
     r = Robot()
     _exec = rclpy.executors.MultiThreadedExecutor()
     for node in r.nodes:

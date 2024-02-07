@@ -182,7 +182,7 @@ class Camera(ROS2_Node):
                     + repr(self).replace('\n', f'\n\t{_t}')
             )
         else:
-            print(f'Created {self}')
+            print(f'| - Created {self}')
 
     # ===============
     # Get Object Data
