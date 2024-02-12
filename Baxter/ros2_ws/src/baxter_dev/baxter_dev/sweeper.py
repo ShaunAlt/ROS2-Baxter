@@ -40,6 +40,7 @@ if TYPE_CHECKING:
         DigitalIO,
         Gripper,
         Image_Processor,
+        Image_Processor_V2,
         Limb,
         MSG_Pose,
         ROS2_Node,
@@ -53,6 +54,7 @@ else:
         DigitalIO,
         Gripper,
         Image_Processor,
+        Image_Processor_V2,
         Limb,
         MSG_Pose,
         ROS2_Node,
@@ -123,6 +125,8 @@ class Robot():
     the sweeping functionality.
     '''
 
+    OCCUPANCY_GRID = (40, 30) # cols, rows
+
     # ===========
     # Constructor
     def __init__(self) -> None:
@@ -133,8 +137,33 @@ class Robot():
         # create digital ios
         self.dig_l_forearm_ok = DigitalIO(Topics.DigitalIO.LEFT_BUTTON_OK)
         self.dig_l_shoulder = DigitalIO(Topics.DigitalIO.LEFT_SHOULDER_BUTTON)
+        self.dig_l_torso_ok = DigitalIO(Topics.DigitalIO.TORSO_LEFT_BUTTON_OK)
         self.dig_r_forearm_ok = DigitalIO(Topics.DigitalIO.RIGHT_BUTTON_OK)
         self.dig_r_shoulder = DigitalIO(Topics.DigitalIO.RIGHT_SHOULDER_BUTTON)
+
+        # create image processors
+        # self.img_l = Image_Processor(
+        #     Topics.Camera.LEFT,
+        #     find_table = True,
+        #     process_table = True,
+        #     table_occu = True
+        # )
+        # self.img_r = Image_Processor(
+        #     Topics.Camera.RIGHT,
+        #     find_table = True,
+        #     process_table = True,
+        #     table_occu = True
+        # )
+        self.img_l = Image_Processor_V2(
+            Topics.Camera.LEFT,
+            Robot.OCCUPANCY_GRID,
+            verbose = 0
+        )
+        self.img_r = Image_Processor_V2(
+            Topics.Camera.RIGHT,
+            Robot.OCCUPANCY_GRID,
+            verbose = 0
+        )
 
         # create limbs
         self.limb_l = Limb(Topics.Limb.LEFT)
@@ -146,6 +175,9 @@ class Robot():
         )
         self.dig_l_shoulder.state_changed.connect(
             self._state_change_l_shoulder
+        )
+        self.dig_l_torso_ok.state_changed.connect(
+            self._state_change_l_torso_ok
         )
         self.dig_r_forearm_ok.state_changed.connect(
             self._state_change_r_forearm_ok
@@ -165,6 +197,7 @@ class Robot():
             self.cam_r,
             self.dig_l_forearm_ok,
             self.dig_l_shoulder,
+            self.dig_l_torso_ok,
             self.dig_r_forearm_ok,
             self.dig_r_shoulder,
             self.limb_l,
@@ -231,6 +264,20 @@ class Robot():
             print('Moving Limbs to Initialize Position')
             self.move_init()
             print('Done moving limbs to INIT.')
+
+    # =====================================
+    # State-Change Callback - Left Torso OK
+    def _state_change_l_torso_ok(self, val: bool) -> None:
+        ''' State-Change Callback - Left Torso OK Button. '''
+        if val:
+            print('Getting Table Occupancy Grids.')
+            print('| - Moving to Position.')
+            self.move_camera()
+            print('| - Getting Occupancy Grids.')
+            occ_uint8, occ_bool = self.img_r.get_occ()
+            print(f'Occupancy UINT8: {occ_uint8}')
+            print(f'Occupancy BOOL: {occ_bool}')
+            print('Done Getting Occupancy Grids.')
 
     # ========================================
     # State-Change Callback - Right Forearm OK

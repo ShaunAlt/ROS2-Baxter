@@ -1100,6 +1100,874 @@ class Image_Processor(ROS2_Node):
 
 
 # =============================================================================
+# Image Processor - V2
+# =============================================================================
+class Image_Processor_V2(ROS2_Node):
+    '''
+    Image Processor - Version 2
+    -
+    Processes the image of a `Camera` object, finding the table and occupancy
+    grid as required.
+
+    Attributes
+    -
+    None
+
+    Methods
+    -
+    None
+    '''
+
+    # ===========
+    # Constructor
+    def __init__(
+            self,
+            topic: str,
+            occu_dim: tuple[int, int],
+            verbose: int = -1
+    ) -> None:
+        '''
+        Image Processor - Version 2 Constructor
+        -
+        Creates an `Image_Processor_V2` object instance.
+
+        Parameters
+        -
+        - topic : `str`
+            - Topic to subscribe the image processor to. Must be in 
+                `Topics.Camera.ALL`.
+        - occu_dim : `tuple[int, int]`
+            - Number of columns and rows respectively for the occupancy grid.
+        - verbose : `int`
+            - Defaults to `-1` which means no verbosity. Any value 0 or greater
+                corresponds to verbosity with the specified indentation.
+            - Values `0` or greater will result in intermediate steps of table
+                and occupancy grid identification being published as well as
+                the final values.
+
+        Returns
+        -
+        None
+        '''
+
+        # validate the topic
+        if not topic in Topics.Camera.ALL:
+            raise ValueError(
+                'Image_Processor_V2 unable to construct object with invalid' \
+                    + f' topic={repr(topic)}'
+            )
+        
+        # initialize node
+        super().__init__(
+            f'ROS2_ImageProcessorV2_{topic}',
+            verbose
+        )
+        self.log(f'Constructing Image Processor - topic={topic}')
+
+        # set attributes
+        self.log('| - Creating Main Attributes')
+        self._data_cam: Optional[MSG_CameraData] = None # camera data
+        self._data_cam_contours: Optional[MSG_CameraData] = None
+        self._data_cam_blur: Optional[MSG_CameraData] = None
+        self._data_cam_edge: Optional[MSG_CameraData] = None
+        self._data_cam_edge_blur: Optional[MSG_CameraData] = None
+        self._data_cam_gray: Optional[MSG_CameraData] = None
+        self._data_occ_bool: Optional[List[List[bool]]] = None
+        self._data_occ_bool_img: Optional[MSG_CameraData] = None
+        self._data_occ_uint8: Optional[List[List[int]]] = None
+        self._data_occ_uint8_img: Optional[MSG_CameraData] = None
+        self._data_table: Optional[MSG_CameraData] = None # table data
+        self._data_table_edge_blur: Optional[MSG_CameraData] = None
+        self._occ_dim: tuple[int, int] = occu_dim
+        self._table_find: bool = False
+        self._table_process: bool = False
+        self._topic: str = topic
+        self.state_changed = Signal()
+
+        # create subscribers
+        self.log('| - Creating Subscribers')
+        self.log('| - Camera Data', 1)
+        self.create_sub(msgCameraData, self.topic_cam, self._sub_cam)
+        self.log('| - Table Data', 1)
+        self.create_sub(msgCameraData, self.topic_table, self._sub_table)
+
+        # create publishers
+        self.log('| - Creating Publishers')
+        self.log('| - Camera Image - Intermediate Publishers', 1)
+        self._pub_org_blur = self.create_pub(
+            msgCameraData,
+            f'{self.topic_cam}/blur'
+        )
+        self._pub_org_contours = self.create_pub(
+            msgCameraData,
+            f'{self.topic_cam}/contours'
+        )
+        self._pub_org_edge = self.create_pub(
+            msgCameraData,
+            f'{self.topic_cam}/edge'
+        )
+        self._pub_org_edge_blur = self.create_pub(
+            msgCameraData,
+            f'{self.topic_cam}/edge_blur'
+        )
+        self._pub_org_gray = self.create_pub(
+            msgCameraData,
+            f'{self.topic_cam}/gray'
+        )
+        self.log('| - Table Image',1)
+        self._pub_table = self.create_pub(
+            msgCameraData, 
+            self.topic_table
+        )
+        self.log('| - Table Image - Intermediate Publishers', 1)
+        self._pub_table_edge_blur = self.create_pub(
+            msgCameraData,
+            f'{self.topic_table}/edge_blur'
+        )
+        self._pub_table_occ_bool = self.create_pub(
+            msgCameraData,
+            f'{self.topic_table}/occupancy/bool'
+        )
+        self._pub_table_occ_uint8 = self.create_pub(
+            msgCameraData,
+            f'{self.topic_table}/occupancy/uint8'
+        )
+
+        if self._V: 
+            self.log(
+                f'| - Created\n' \
+                + ('\t'*self._verbose)\
+                + repr(self).replace('\n', '\n\t'+('\t'*self._verbose))
+            )
+        else: print(f'| - Created {self}')
+
+    # ==================
+    # Data - Camera Data
+    @property
+    def data_cam(self) -> Optional[MSG_CameraData]:
+        ''' Data - Camera Data. '''
+        return self._data_cam
+    
+    # ============================
+    # Data - Camera Data - Blurred
+    @property
+    def data_cam_blur(self) -> Optional[MSG_CameraData]:
+        ''' Data - Camera Data - Blurred. '''
+        return self._data_cam_blur
+    @data_cam_blur.setter
+    def data_cam_blur(self, data: MSG_CameraData) -> None:
+        self._data_cam_blur = data
+        self._pub_org_blur.publish(data.create_msg())
+    
+    # =================================
+    # Data - Camera Data - Key Contours
+    @property
+    def data_cam_contours(self) -> Optional[MSG_CameraData]:
+        ''' Data - Camera Data - Key Contours. '''
+        return self._data_cam_contours
+    @data_cam_contours.setter
+    def data_cam_contours(self, data: MSG_CameraData) -> None:
+        self._data_cam_contours = data
+        self._pub_org_contours.publish(data.create_msg())
+    
+    # ===============================
+    # Data - Camera Data - Canny Edge
+    @property
+    def data_cam_edge(self) -> Optional[MSG_CameraData]:
+        ''' Data - Camera Data - Canny Edge. '''
+        return self._data_cam_edge
+    @data_cam_edge.setter
+    def data_cam_edge(self, data: MSG_CameraData) -> None:
+        self._data_cam_edge = data
+        self._pub_org_edge.publish(data.create_msg())
+    
+    # =================================
+    # Data - Camera Data - Edge Blurred
+    @property
+    def data_cam_edge_blur(self) -> Optional[MSG_CameraData]:
+        ''' Data - Camera Data - Edge Blurred. '''
+        return self._data_cam_edge_blur
+    @data_cam_edge_blur.setter
+    def data_cam_edge_blur(self, data: MSG_CameraData) -> None:
+        self._data_cam_edge_blur = data
+        self._pub_org_edge_blur.publish(data.create_msg())
+    
+    # ===============================
+    # Data - Camera Data - Gray-Scale
+    @property
+    def data_cam_gray(self) -> Optional[MSG_CameraData]:
+        ''' Data - Camera Data - Gray-Scale. '''
+        return self._data_cam_gray
+    @data_cam_gray.setter
+    def data_cam_gray(self, data: MSG_CameraData) -> None:
+        self._data_cam_gray = data
+        self._pub_org_gray.publish(data.create_msg())
+
+    # =================================
+    # Data - Occupancy Grid Data - bool
+    @property
+    def data_occ_bool(self) -> Optional[List[List[bool]]]:
+        ''' Data - Occupancy Grid Data - BOOL. '''
+        return self._data_occ_bool
+
+    # ==================================
+    # Data - Occupancy Grid Data - uint8
+    @property
+    def data_occ_uint8(self) -> Optional[List[List[bool]]]:
+        ''' Data - Occupancy Grid Data - UINT8. '''
+        return self._data_occ_uint8
+
+    # =========================================
+    # Data - Occupancy Grid Data - bool (IMAGE)
+    @property
+    def data_occ_bool_img(self) -> Optional[MSG_CameraData]:
+        ''' Data - Occupancy Grid Data - BOOL (IMAGE). '''
+        return self._data_occ_bool_img
+    @data_occ_bool_img.setter
+    def data_occ_bool_img(self, data: MSG_CameraData) -> None:
+        self._data_occ_bool_img = data
+        self._pub_table_occ_bool.publish(data.create_msg())
+
+    # ==================================
+    # Data - Occupancy Grid Data - uint8
+    @property
+    def data_occ_uint8_img(self) -> Optional[MSG_CameraData]:
+        ''' Data - Occupancy Grid Data - UINT8. '''
+        return self._data_occ_uint8_img
+    @data_occ_uint8_img.setter
+    def data_occ_uint8_img(self, data: MSG_CameraData) -> None:
+        self._data_occ_uint8_img = data
+        self._pub_table_occ_uint8.publish(data.create_msg())
+    
+    # =================
+    # Data - Table Data
+    @property
+    def data_table(self) -> Optional[MSG_CameraData]:
+        ''' Data - Table Data. '''
+        return self._data_table
+    @data_table.setter
+    def data_table(self, data: MSG_CameraData) -> None:
+        self._data_table = data
+        self._pub_table.publish(data.create_msg())
+    
+    # ================================
+    # Data - Table Data - Edge Blurred
+    @property
+    def data_table_edge_blur(self) -> Optional[MSG_CameraData]:
+        ''' Data - Table Data - Gray-Scale. '''
+        return self._data_table_edge_blur
+    @data_table_edge_blur.setter
+    def data_table_edge_blur(self, data: MSG_CameraData) -> None:
+        self._data_table_edge_blur = data
+        self._pub_table_edge_blur.publish(data.create_msg())
+
+    # ===================
+    # Topic - Camera Data
+    @property
+    def topic_cam(self) -> str:
+        ''' Topic - Camera Data. '''
+        return f'{self._topic}/{Topics.Camera.IMAGE_DATA}'
+
+    # ==================
+    # Topic - Table Data
+    @property
+    def topic_table(self) -> str:
+        ''' Topic - Table Data. '''
+        return f'{self._topic}/{Topics.Camera.PROCESS_DATA_TABLE}'
+    
+    # =================================
+    # Subscriber Callback - Camera Data
+    def _sub_cam(self, msg: msgCameraData) -> None:
+        '''
+        Subscriber Callback - Camera Data
+        -
+        Runs whenever data is published to the `Camera` topic that the 
+        `Image_Processor` is subscribed to.
+
+        Parameters
+        -
+        - msg : `msgCameraData`
+            - Contains the data from the image passed through the topic.
+
+        Returns
+        -
+        None
+        '''
+
+        # update data
+        self._data_cam = MSG_CameraData.from_msg(msg)
+        if self._table_find: self.table_find()
+    
+    # ================================
+    # Subscriber Callback - Table Data
+    def _sub_table(self, msg: msgCameraData) -> None:
+        '''
+        Subscriber Callback - Table Data
+        -
+        Runs whenever data is published to the table topic that the 
+        `Image_Processor` is subscribed to.
+
+        Parameters
+        -
+        - msg : `msgCameraData`
+            - Contains the data from the image passed through the topic.
+
+        Returns
+        -
+        None
+        '''
+
+        # update data
+        self._data_table = MSG_CameraData.from_msg(msg)
+        if self._table_process: self.table_process()
+
+    # ===================
+    # Get Occupancy Grids
+    def get_occ(
+            self, 
+            timeout: float = 0.0
+    ) -> Tuple[List[List[int]], List[List[bool]]]:
+        '''
+        Get Occupancy Grids
+        -
+        Gets the UINT8 and BOOL occupancy grids of the table.
+
+        Parameters
+        -
+        - timeout : `float`
+            - Defaults to `0.0`, which means no timeout. Otherwise, will
+                stop waiting for the `Image_Processor_V2` to find and process
+                the occupancy grids of the table after this many seconds.
+
+        Returns
+        -
+        - `Tuple[A, B]`
+            - `A = List[List[int]]` : 2D occupancy UINT8 grid.
+            - `B = List[List[bool]]` : 2D occupancy BOOL grid.
+        '''
+
+        self.log(f'Getting Occupancy Grids {self}')
+        self.reset()
+        df_wait(
+            lambda: (
+                (self.data_occ_bool is not None)
+                and (self.data_occ_uint8 is not None)
+            ),
+            self,
+            timeout,
+            timeout_msg = f'Get Occupancy Grids {self}'
+        )
+        return (self.data_occ_bool, self.data_occ_uint8)
+
+    # =====
+    # Reset
+    def reset(self) -> None:
+        '''
+        Reset Image Processor
+        -
+        Resets the find and process flags in the `Image_Processor_V2` object
+        so that it is able to re-find and re-process the table camera image.
+
+        Parameters
+        -
+        None
+
+        Returns
+        -
+        None
+        '''
+
+        self.log(f'Image Processor RESET: {self}')
+        self._data_occ_bool = None
+        self._data_occ_uint8 = None
+        self._data_table = None
+        self._table_find = True
+        self._table_process = True
+
+    # ==========================================
+    # Table Process - Find Table in Camera Image
+    def table_find(self) -> None:
+        '''
+        Table Process - Find Table in Camera Image
+        -
+        Process the image data and identify the table.
+
+        Parameters
+        -
+        None
+
+        Returns
+        -
+        None
+        '''
+
+        # make sure data exists
+        if self._data_cam is None:
+            raise RuntimeWarning(
+                f'Image_Processor {self} tried to find_table with no' \
+                    + ' valid data.'
+            )
+        
+        # convert image array to numpy array
+        img = numpy.array(self._data_cam.image, dtype = numpy.uint8)
+        img = img.reshape(
+            self._data_cam.height,
+            self._data_cam.width,
+            self._data_cam.channels
+        )
+        img = cv2.cvtColor(img, cv2.COLOR_BGRA2BGR)
+
+        # get edges
+        img_gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
+        img_blur = cv2.GaussianBlur(img_gray.copy(), (5, 5), 0) # (5,5)
+        img_edge = cv2.Canny(img_blur.copy(), 10, 30) # (75, 200) (20, 75)
+        img_edge_blur = cv2.GaussianBlur(img_edge.copy(), (7, 7), 0)
+
+        # get contours
+        img_contour = img.copy()
+        contours = sorted(
+            cv2.findContours(
+                img_edge_blur.copy(),
+                cv2.RETR_LIST,
+                cv2.CHAIN_APPROX_SIMPLE
+            )[0],
+            key = cv2.contourArea,
+            reverse = True
+        )[:5]
+
+        # find main contour
+        doc_contour: MatLike = [] # type: ignore
+        doc_points = numpy.array([(0, 0) for _ in range(4)], dtype='float32')
+        for i, _c in enumerate(contours):
+            approx = cv2.approxPolyDP(
+                _c, 
+                0.02 * cv2.arcLength(_c, True), 
+                True
+            )
+            for _p in approx:
+                cv2.circle(
+                    img_contour,
+                    tuple(_p[0]),
+                    3,
+                    {
+                        (True, True): (255, 0, 0),
+                        (False, True): (0, 255, 0),
+                        (False, False): (255, 255, 0),
+                    }[(i<=0, i<=1)],
+                    4
+                )
+            if len(approx) == 4:
+                doc_contour = approx
+                break
+        for i, _c in enumerate(doc_contour):
+            _p = tuple(_c[0])
+            cv2.circle(img_contour, _p, 6, (0, 0, 255), 8)
+            doc_points[i] = _p
+
+        # set table position
+        table_key_points = None
+        if len(doc_points) == 4:
+            table_key_points = doc_points
+        
+        # publish camera data
+        if self._V:
+            self.data_cam_gray = MSG_CameraData(
+                image = img_gray.flatten().tolist(), # type: ignore
+                width = self._data.width,
+                height = self._data.height,
+                channels = 1,
+                skip_validation = True
+            )
+            self.data_cam_blur = MSG_CameraData(
+                image = img_blur.flatten().tolist(), # type: ignore
+                width = self._data.width,
+                height = self._data.height,
+                channels = 1,
+                skip_validation = True
+            )
+            self.data_cam_edge = MSG_CameraData(
+                image = img_edge.flatten().tolist(), # type: ignore
+                width = self._data.width,
+                height = self._data.height,
+                channels = 1,
+                skip_validation = True
+            )
+            self.data_cam_edge_blur = MSG_CameraData(
+                image = img_edge_blur.flatten().tolist(), # type: ignore
+                width = self._data.width,
+                height = self._data.height,
+                channels = 1,
+                skip_validation = True
+            )
+            self.data_cam_contours = MSG_CameraData(
+                image = img_contour.flatten().tolist(), # type: ignore
+                width = self._data.width,
+                height = self._data.height,
+                channels = 3,
+                skip_validation = True
+            )
+
+        # create warped image
+        img_warped: Union[None, MatLike] = None
+        if table_key_points is not None:
+            img_warped = Image_Processor.PyImageSearch.four_point_transform(
+                img.copy(),
+                table_key_points
+            )
+        
+        if img_warped is not None:
+            msg = MSG_CameraData(
+                image = img_warped.flatten().tolist(), # type: ignore
+                width = len(img_warped[0]),
+                height = len(img_warped),
+                channels = len(img_warped[0][0]),
+                skip_validation = True
+            )
+            self.data_table = msg
+            self._table_find = False
+        return None
+
+    # ===================================================
+    # Table Process - Find Occupancy Grids in Table Image
+    def table_process(self) -> None:
+        '''
+        Process the Table
+        -
+        Process the table image and identify the objects on the table.
+
+        Parameters
+        -
+        None
+
+        Returns
+        -
+        None
+        '''
+
+        # make sure data exists
+        if self._data_table is None:
+            raise RuntimeWarning(
+                f'Image_Processor {self} tried to process_table with no' \
+                    + ' valid data.'
+            )
+        
+        # convert image array to numpy array
+        img = numpy.array(self._data_table.image, dtype = numpy.uint8)
+        img = img.reshape(
+            self._data_table.height,
+            self._data_table.width,
+            self._data_table.channels
+        )
+
+        # create edge-blur of table data
+        img_gray = cv2.cvtColor(img.copy(), cv2.COLOR_BGR2GRAY)
+        img_blur = cv2.GaussianBlur(img_gray.copy(), (5, 5), 0) # (5,5)
+        img_edge = cv2.Canny(img_blur.copy(), 10, 30) # (75, 200) (20, 75)
+        img_edge_blur = cv2.GaussianBlur(img_edge.copy(), (7, 7), 0)
+
+        # publish table edge data
+        if self._V:
+            self.data_table_edge_blur = MSG_CameraData(
+                image = img_edge_blur.flatten().tolist(), # type: ignore
+                width = self._data_table.width,
+                height = self._data_table.height,
+                channels = 1,
+                skip_validation = True
+            )
+
+        # create and publish occupancy grid if required
+        occ_data_uint8, occ_img_uint8 = Image_Processor.create_occupancy(
+            img_edge_blur,
+            self._occ_dim[1],
+            self._occ_dim[0],
+            10
+        )
+        occ_data_bool, occ_img_bool = Image_Processor.create_occupancy(
+            img_edge_blur,
+            self._occ_dim[1],
+            self._occ_dim[0],
+            10,
+            flag_uint8 = False
+        )
+        self.data_occ_uint8_img = MSG_CameraData(
+            image = occ_img_uint8.flatten().tolist(), # type: ignore
+            width = occ_img_uint8.shape[1],
+            height = occ_img_uint8.shape[0],
+            channels = 1,
+            skip_validation = True
+        )
+        self.data_occ_bool_img = MSG_CameraData(
+            image = occ_img_bool.flatten().tolist(), # type: ignore
+            width = occ_img_bool.shape[1],
+            height = occ_img_bool.shape[0],
+            channels = 1,
+            skip_validation = True
+        )
+        self.data_occ_bool = occ_data_bool
+        self.data_occ_uint8 = occ_data_uint8
+        self._table_process = False
+        return None
+
+    # =====================
+    # Create Occupancy Grid
+    @staticmethod
+    def create_occupancy(
+            img: numpy.ndarray,
+            rows: int,
+            cols: int,
+            img_blowup: int = 10,
+            flag_uint8: bool = True,
+            src: str = 'canny'
+    ) -> Tuple[numpy.ndarray, numpy.ndarray]:
+        '''
+        Create Occupancy Grid
+        -
+        Creates an occupancy grid of the image, with the specified number of
+        rows and columns. Can return either a graded or binary grid.
+
+        Parameters
+        -
+        - img : `numpy.ndarray`
+            - Image to create the occupancy grid from.
+        - rows : `int`
+            - Number of rows to split the image into for the grid.
+        - cols : `int`
+            - Number of cols to split the image into for the grid.
+        - img_blowup : `int`
+            - Scalar number of how much to increase the size of the occupancy
+                grid for use in viewing on camera.
+        - flag_uint8 : `bool`
+            - Whether to output a UINT8 or BOOL occupancy grid. Defaults to
+                True which means UINT8.
+        - src : `str`
+            - Image type source. Defaults to `'canny'`, which means the
+                image is the output of a canny edge filter.
+            - Options:
+                - 'canny' : Canny edge filter.
+
+        Returns
+        -
+        `Tuple[numpy.ndarray, numpy.ndarray]`
+            - [0]: Occupancy grid.
+            - [1]: Image viewable grid (blown up version of occupancy grid
+                which has been converted to image-streaming friendly data).
+        '''
+
+        # initialize variables
+        _c: int # column number counter
+        _c2: int # column number counter 2
+        _r: int # row number counter
+        _r2: int # row number counter 2
+        col_width: int # number of cols per sub-matrix in split image
+        img_split: numpy.ndarray # split image
+        occ_grid: numpy.ndarray # occupancy grid
+        occ_img: numpy.ndarray # occupancy grid image
+        row_width: int # number of rows per sub-matrix in split image
+        rgb: bool = len(img.shape) == 3 and img.shape[2] == 3
+
+        # get split image
+        (
+            row_width, 
+            col_width, 
+            img_split
+        ) = Image_Processor.split_img(
+            img,
+            rows,
+            cols
+        )
+
+        # initialize occupancy grid + image
+        occ_grid = numpy.zeros((rows, cols), numpy.uint8)
+        occ_img = numpy.zeros((rows*img_blowup, cols*img_blowup), numpy.uint8)
+
+        # create occupancy grid data
+        if src == 'canny':
+            for _r in range(rows):
+                for _c in range(cols):
+                    if flag_uint8:
+                        if rgb:
+                            occ_grid[_r, _c] = (
+                                (img_split[_r, _c].sum()) \
+                                / (col_width * row_width * 3) # 3 channels
+                            )
+                        occ_grid[_r, _c] = (
+                            (img_split[_r, _c].sum()) \
+                            / (col_width * row_width) # single channel
+                        )
+                    else:
+                        occ_grid[_r, _c] = int(img_split[_r, _c].sum() > 0)
+        else:
+            raise ValueError(
+                f'Image_Processor.create_occupancy invalid src = {src}'
+            )
+        
+        # create occupancy image
+        if flag_uint8:
+            for _r in range(rows):
+                for _c in range(cols):
+                    for _r2 in range(img_blowup):
+                        for _c2 in range(img_blowup):
+                            occ_img[
+                                (_r*img_blowup + _r2), 
+                                (_c*img_blowup + _c2)
+                            ] = occ_grid[_r, _c]
+        else:
+            for _r in range(rows):
+                for _c in range(cols):
+                    for _r2 in range(img_blowup):
+                        for _c2 in range(img_blowup):
+                            occ_img[
+                                (_r*img_blowup + _r2), 
+                                (_c*img_blowup + _c2)
+                            ] = occ_grid[_r, _c] * 255 # (0 or 1) * 255
+
+        return (occ_grid, occ_img)
+
+    # ===========
+    # Split Image
+    @staticmethod
+    def split_img(
+        img: numpy.ndarray,
+        rows: int,
+        cols: int
+    ) -> Tuple[int, int, numpy.ndarray]:
+        '''
+        Split Image
+        -
+        Splits a parsed image into a segmented version of the original. Adds 2
+        dimensions (2D array where each cell in the 2D array contains a
+        sub-matrix of the original). Also truncates any excess rows and cols on
+        the right/bottom of the image so that the image is the correct size.
+
+        Parameters
+        -
+        - img : `numpy.ndarray`
+            - Image being split.
+        - rows : `int`
+            - Number of rows to split the image into.
+        - cols : `int`
+            - Number of columns to split the image into.
+
+        Returns
+        -
+        `Tuple[int, int, numpy.ndarray]`
+            - [0]: Number of rows per sub-matrix.
+            - [1]: Number of cols per sub-matrix.
+            - [2]: Split Image.
+        '''
+
+        # truncate excess rows/cols
+        if img.shape[0] % rows > 0:
+            img = img[0:(-1*(img.shape[0]%rows)), :]
+        if img.shape[1] % cols > 0:
+            img = img[:, 0:(-1*(img.shape[1]%cols))]
+
+        # calculate row and col widths
+        row_width: int = img.shape[0] // rows
+        col_width: int = img.shape[1] // cols
+
+        return (
+            row_width,
+            col_width,
+            numpy.array([
+                numpy.array([
+                    img[
+                        (r*row_width):(((r+1)*row_width)-1),
+                        (c*col_width):(((c+1)*col_width)-1)
+                    ]
+                    for c in range(cols)
+                ])
+                for r in range(rows)
+            ])
+        )
+
+    class PyImageSearch():
+        ''' Object container for pyimagesearch.com Functions. '''
+
+        @staticmethod
+        def order_points(pts: numpy.ndarray) -> numpy.ndarray:
+            ''' 
+                Taken from: 
+                    https://pyimagesearch.com/2014/08/25/4-point-opencv-
+                        getperspective-transform-example/
+            '''
+
+            # initialzie a list of coordinates that will be ordered
+            # such that the first entry in the list is the top-left,
+            # the second entry is the top-right, the third is the
+            # bottom-right, and the fourth is the bottom-left
+            rect = numpy.zeros((4, 2), dtype = "float32")
+            # the top-left point will have the smallest sum, whereas
+            # the bottom-right point will have the largest sum
+            s = pts.sum(axis = 1)
+            rect[0] = pts[numpy.argmin(s)]
+            rect[2] = pts[numpy.argmax(s)]
+            # now, compute the difference between the points, the
+            # top-right point will have the smallest difference,
+            # whereas the bottom-left will have the largest difference
+            diff = numpy.diff(pts, axis = 1)
+            rect[1] = pts[numpy.argmin(diff)]
+            rect[3] = pts[numpy.argmax(diff)]
+            # return the ordered coordinates
+            return rect
+        
+        @staticmethod
+        def four_point_transform(
+            image: MatLike, 
+            pts: numpy.ndarray
+        ) -> MatLike:
+            ''' 
+                Taken from: 
+                    https://pyimagesearch.com/2014/08/25/4-point-opencv-
+                        getperspective-transform-example/
+            '''
+
+            # obtain a consistent order of the points and unpack them
+            # individually
+            rect = Image_Processor.PyImageSearch.order_points(pts)
+            (tl, tr, br, bl) = rect
+            # compute the width of the new image, which will be the
+            # maximum distance between bottom-right and bottom-left
+            # x-coordiates or the top-right and top-left x-coordinates
+            widthA = numpy.sqrt(
+                ((br[0] - bl[0]) ** 2) \
+                + ((br[1] - bl[1]) ** 2)
+            )
+            widthB = numpy.sqrt(
+                ((tr[0] - tl[0]) ** 2) \
+                + ((tr[1] - tl[1]) ** 2)
+            )
+            maxWidth = max(int(widthA), int(widthB))
+            # compute the height of the new image, which will be the
+            # maximum distance between the top-right and bottom-right
+            # y-coordinates or the top-left and bottom-left y-coordinates
+            heightA = numpy.sqrt(
+                ((tr[0] - br[0]) ** 2) \
+                + ((tr[1] - br[1]) ** 2)
+            )
+            heightB = numpy.sqrt(
+                ((tl[0] - bl[0]) ** 2) \
+                + ((tl[1] - bl[1]) ** 2)
+            )
+            maxHeight = max(int(heightA), int(heightB))
+            # now that we have the dimensions of the new image, construct
+            # the set of destination points to obtain a "birds eye view",
+            # (i.e. top-down view) of the image, again specifying points
+            # in the top-left, top-right, bottom-right, and bottom-left
+            # order
+            dst = numpy.array([
+                [0, 0],
+                [maxWidth - 1, 0],
+                [maxWidth - 1, maxHeight - 1],
+                [0, maxHeight - 1]], dtype = "float32")
+            # compute the perspective transform matrix and then apply it
+            M = cv2.getPerspectiveTransform(rect, dst)
+            warped = cv2.warpPerspective(image, M, (maxWidth, maxHeight))
+            # return the warped image
+            return cast(MatLike, warped)
+
+
+# =============================================================================
 # Image Viewer
 # =============================================================================
 class Image_Viewer(ROS2_Node):

@@ -865,6 +865,7 @@ from .srvs import (
 from .camera import (
     Camera,
     Image_Processor,
+    Image_Processor_V2,
     Image_Viewer,
 )
 from .digital_io import (
