@@ -1123,7 +1123,7 @@ class Image_Processor_V2(ROS2_Node):
     def __init__(
             self,
             topic: str,
-            occu_dim: tuple[int, int],
+            occu_dim: Tuple[int, int],
             verbose: int = -1
     ) -> None:
         '''
@@ -1178,7 +1178,7 @@ class Image_Processor_V2(ROS2_Node):
         self._data_occ_uint8_img: Optional[MSG_CameraData] = None
         self._data_table: Optional[MSG_CameraData] = None # table data
         self._data_table_edge_blur: Optional[MSG_CameraData] = None
-        self._occ_dim: tuple[int, int] = occu_dim
+        self._occ_dim: Tuple[int, int] = occu_dim
         self._table_find: bool = False
         self._table_process: bool = False
         self._topic: str = topic
@@ -1374,6 +1374,26 @@ class Image_Processor_V2(ROS2_Node):
     def topic_table(self) -> str:
         ''' Topic - Table Data. '''
         return f'{self._topic}/{Topics.Camera.PROCESS_DATA_TABLE}'
+    
+    # =========================
+    # ROS2_obj: Get Object Data
+    def _get_data(
+            self,
+            short: bool = False
+    ) -> _DATA:
+        if short:
+            return {
+                'node_name': self.node_name,
+                'topic_cam': self.topic_cam,
+                'topic_table': self.topic_table,
+            }
+        return {
+            'node_name': self.node_name,
+            'topic_cam': self.topic_cam,
+            'topic_table': self.topic_table,
+            'data_cam': self.data_cam,
+            'data_table': self.data_table,
+        }
     
     # =================================
     # Subscriber Callback - Camera Data
