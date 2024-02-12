@@ -276,9 +276,15 @@ class Robot():
             print('| - Moving to Position.')
             self.move_camera()
             print('| - Getting Occupancy Grids.')
-            occ_uint8, occ_bool = self.img_r.get_occ()
-            print(f'Occupancy UINT8: {occ_uint8}')
-            print(f'Occupancy BOOL: {occ_bool}')
+            occ_uint8, occ_bool = self.img_r.get_occ() # numpy 2d arrays
+            print(
+                '| - UINT8 Occupancy Grid: ' \
+                + self.display_occupancy(occ_uint8).replace('\n', '\n|    ')
+            )
+            print(
+                '| - BOOL Occupancy Grid: ' \
+                + self.display_occupancy(occ_bool).replace('\n', '\n|    ')
+            )
             print('Done Getting Occupancy Grids.')
 
     # ========================================
@@ -298,7 +304,39 @@ class Robot():
             print('Moving Limbs to Camera Position')
             self.move_camera()
             print('Done moving limbs to CAM_TABLE.')
-            
+
+    # ======================
+    # Display Occupancy Grid
+    def display_occupancy(self, grid: List[List[Any]]) -> str:
+        '''
+        Display Occupancy Grid
+        -
+        Displays an occupancy grid in a readable format.
+
+        Parameters
+        -
+        - grid : `List[List[Any]] | numpy 2D array`
+            - 2D array/list to be printed out.
+
+        Returns
+        -
+        `str`
+            - String containing pretty-printed occupancy grid.
+        '''
+
+        _type = int
+        if isinstance(grid[0][0], bool): _type = bool
+
+        output: str = '[\n'
+        for row in grid:
+            if _type is int:
+                output += '\t' + ', '.join([f'{cell:03}' for cell in row])
+            elif _type is bool:
+                output += '\t' + ', '.join([str(int(cell)) for cell in row])
+        output += ']'
+
+        return output
+
     # ====================================
     # Move Limbs to Attach/Detach Position
     def move_attach(self) -> None:

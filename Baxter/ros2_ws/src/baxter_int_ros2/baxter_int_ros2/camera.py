@@ -1118,6 +1118,8 @@ class Image_Processor_V2(ROS2_Node):
     None
     '''
 
+    PUB_REPS: int = 2
+
     # ===========
     # Constructor
     def __init__(
@@ -1233,6 +1235,9 @@ class Image_Processor_V2(ROS2_Node):
             f'{self.topic_table}/occupancy/uint8'
         )
 
+        # initializing image streaming topics
+
+
         if self._V: 
             self.log(
                 f'| - Created\n' \
@@ -1257,7 +1262,7 @@ class Image_Processor_V2(ROS2_Node):
     @data_cam_blur.setter
     def data_cam_blur(self, data: MSG_CameraData) -> None:
         self._data_cam_blur = data
-        self._pub_org_blur.publish(data.create_msg())
+        for _ in range(self.PUB_REPS): self._pub_org_blur.publish(data.create_msg())
     
     # =================================
     # Data - Camera Data - Key Contours
@@ -1268,7 +1273,7 @@ class Image_Processor_V2(ROS2_Node):
     @data_cam_contours.setter
     def data_cam_contours(self, data: MSG_CameraData) -> None:
         self._data_cam_contours = data
-        self._pub_org_contours.publish(data.create_msg())
+        for _ in range(self.PUB_REPS): self._pub_org_contours.publish(data.create_msg())
     
     # ===============================
     # Data - Camera Data - Canny Edge
@@ -1279,7 +1284,7 @@ class Image_Processor_V2(ROS2_Node):
     @data_cam_edge.setter
     def data_cam_edge(self, data: MSG_CameraData) -> None:
         self._data_cam_edge = data
-        self._pub_org_edge.publish(data.create_msg())
+        for _ in range(self.PUB_REPS): self._pub_org_edge.publish(data.create_msg())
     
     # =================================
     # Data - Camera Data - Edge Blurred
@@ -1290,7 +1295,7 @@ class Image_Processor_V2(ROS2_Node):
     @data_cam_edge_blur.setter
     def data_cam_edge_blur(self, data: MSG_CameraData) -> None:
         self._data_cam_edge_blur = data
-        self._pub_org_edge_blur.publish(data.create_msg())
+        for _ in range(self.PUB_REPS): self._pub_org_edge_blur.publish(data.create_msg())
     
     # ===============================
     # Data - Camera Data - Gray-Scale
@@ -1301,7 +1306,7 @@ class Image_Processor_V2(ROS2_Node):
     @data_cam_gray.setter
     def data_cam_gray(self, data: MSG_CameraData) -> None:
         self._data_cam_gray = data
-        self._pub_org_gray.publish(data.create_msg())
+        for _ in range(self.PUB_REPS): self._pub_org_gray.publish(data.create_msg())
 
     # =================================
     # Data - Occupancy Grid Data - bool
@@ -1326,7 +1331,7 @@ class Image_Processor_V2(ROS2_Node):
     @data_occ_bool_img.setter
     def data_occ_bool_img(self, data: MSG_CameraData) -> None:
         self._data_occ_bool_img = data
-        self._pub_table_occ_bool.publish(data.create_msg())
+        for _ in range(self.PUB_REPS): self._pub_table_occ_bool.publish(data.create_msg())
 
     # ==================================
     # Data - Occupancy Grid Data - uint8
@@ -1337,7 +1342,7 @@ class Image_Processor_V2(ROS2_Node):
     @data_occ_uint8_img.setter
     def data_occ_uint8_img(self, data: MSG_CameraData) -> None:
         self._data_occ_uint8_img = data
-        self._pub_table_occ_uint8.publish(data.create_msg())
+        for _ in range(self.PUB_REPS): self._pub_table_occ_uint8.publish(data.create_msg())
     
     # =================
     # Data - Table Data
@@ -1348,7 +1353,7 @@ class Image_Processor_V2(ROS2_Node):
     @data_table.setter
     def data_table(self, data: MSG_CameraData) -> None:
         self._data_table = data
-        self._pub_table.publish(data.create_msg())
+        for _ in range(self.PUB_REPS): self._pub_table.publish(data.create_msg())
     
     # ================================
     # Data - Table Data - Edge Blurred
@@ -1359,7 +1364,7 @@ class Image_Processor_V2(ROS2_Node):
     @data_table_edge_blur.setter
     def data_table_edge_blur(self, data: MSG_CameraData) -> None:
         self._data_table_edge_blur = data
-        self._pub_table_edge_blur.publish(data.create_msg())
+        for _ in range(self.PUB_REPS): self._pub_table_edge_blur.publish(data.create_msg())
 
     # ===================
     # Topic - Camera Data
@@ -1747,9 +1752,9 @@ class Image_Processor_V2(ROS2_Node):
         )
         self.log('Storing Occupancy Data')
         self.log('| - BOOL')
-        self.data_occ_bool = occ_data_bool
+        self._data_occ_bool = occ_data_bool
         self.log('| - UINT8')
-        self.data_occ_uint8 = occ_data_uint8
+        self._data_occ_uint8 = occ_data_uint8
         self.log(f'Processed Table')
         return None
 
