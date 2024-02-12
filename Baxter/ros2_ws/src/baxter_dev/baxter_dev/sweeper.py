@@ -165,9 +165,9 @@ class Robot():
         (0.060, -0.640, -0.350), # Bottom Right
     )
     COORDS_PAN = ( # X (Forwards/Backwards), Y (Left/Right), Z (Up/Down)
-        (0, 0, 0), # Top Left
-        (0, 0, 0), # Bottom Right
-        (0, 0, 0), # Bottom Left
+        (0.910, 0.600, -0.350), # Top Left
+        (0.235, -0.410, -0.350), # Bottom Right
+        # (0.235, 0.600, -0.350), # Bottom Left
     )
 
     # ===========
@@ -370,7 +370,7 @@ class Robot():
             self._move_limbs(
                 target_l = MSG_Pose.from_coords(
                     pos_pan_new,
-                    (0.0, math.sqrt(2), 0.0, -1*math.sqrt(2))
+                    (math.sqrt(2), math.sqrt(2), 0.0, 0.0)
                 ),
                 target_r = MSG_Pose.from_coords(
                     pos_brush_new,
