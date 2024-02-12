@@ -1713,19 +1713,23 @@ class Image_Processor_V2(ROS2_Node):
 
         # create and publish occupancy grid if required
         self.log(f'Process Table - Get Occupancy Grids')
-        occ_data_uint8, occ_img_uint8 = Image_Processor.create_occupancy(
+        self.log('| - Occupancy - UINT8')
+        occ_data_uint8, occ_img_uint8 = Image_Processor_V2.create_occupancy(
             img_edge_blur,
             self._occ_dim[1],
             self._occ_dim[0],
             10
         )
-        occ_data_bool, occ_img_bool = Image_Processor.create_occupancy(
+        self.log('| - Occupancy - BOOL')
+        occ_data_bool, occ_img_bool = Image_Processor_V2.create_occupancy(
             img_edge_blur,
             self._occ_dim[1],
             self._occ_dim[0],
             10,
             flag_uint8 = False
         )
+        self.log('Storing + Publishing Occupancy Grids')
+        self.log('| - UINT8')
         self.data_occ_uint8_img = MSG_CameraData(
             image = occ_img_uint8.flatten().tolist(), # type: ignore
             width = occ_img_uint8.shape[1],
@@ -1733,6 +1737,7 @@ class Image_Processor_V2(ROS2_Node):
             channels = 1,
             skip_validation = True
         )
+        self.log('| - BOOL')
         self.data_occ_bool_img = MSG_CameraData(
             image = occ_img_bool.flatten().tolist(), # type: ignore
             width = occ_img_bool.shape[1],
@@ -1740,7 +1745,10 @@ class Image_Processor_V2(ROS2_Node):
             channels = 1,
             skip_validation = True
         )
+        self.log('Storing Occupancy Data')
+        self.log('| - BOOL')
         self.data_occ_bool = occ_data_bool
+        self.log('| - UINT8')
         self.data_occ_uint8 = occ_data_uint8
         self.log(f'Processed Table')
         return None
@@ -1803,21 +1811,24 @@ class Image_Processor_V2(ROS2_Node):
         rgb: bool = len(img.shape) == 3 and img.shape[2] == 3
 
         # get split image
+        print('splitting image')
         (
             row_width, 
             col_width, 
             img_split
-        ) = Image_Processor.split_img(
+        ) = Image_Processor_V2.split_img(
             img,
             rows,
             cols
         )
 
         # initialize occupancy grid + image
+        print('initializing occupancy grid')
         occ_grid = numpy.zeros((rows, cols), numpy.uint8)
         occ_img = numpy.zeros((rows*img_blowup, cols*img_blowup), numpy.uint8)
 
         # create occupancy grid data
+        print('creating data')
         if src == 'canny':
             for _r in range(rows):
                 for _c in range(cols):
@@ -1839,6 +1850,7 @@ class Image_Processor_V2(ROS2_Node):
             )
         
         # create occupancy image
+        print('creating img')
         if flag_uint8:
             for _r in range(rows):
                 for _c in range(cols):
