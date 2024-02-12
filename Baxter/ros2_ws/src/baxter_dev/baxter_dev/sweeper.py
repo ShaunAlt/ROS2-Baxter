@@ -92,13 +92,31 @@ class POSES():
     # ======================
     # Camera View Table Pose
     class CAM_TABLE():
-        L = MSG_Pose.from_coords(
-            (0.6, 0.7, 0.2,),
-            (0.0, 1.0, 0.0, 0.0,)
+        # L = MSG_Pose.from_coords(
+        #     (0.6, 0.7, 0.2,),
+        #     (0.0, 1.0, 0.0, 0.0,)
+        # )
+        # R = MSG_Pose.from_coords(
+        #     (0.6, 0.0, 0.47,),
+        #     (0.0, 1.0, 0.0, 0.0,)
+        # )
+        L = (
+            0.6143593055481082, # E0
+            0.9928690649588341, # E1
+            -0.2634612003193198, # S0
+            -0.2592427531526349, # S1
+            -0.21399031991001521, # W0
+            0.5756262906540015, # W1
+            0.5871311465631421, # W0
         )
-        R = MSG_Pose.from_coords(
-            (0.6, 0.0, 0.47,),
-            (0.0, 1.0, 0.0, 0.0,)
+        R = (
+            1.9569759901448165, # E0
+            1.2586312364599819, # E1
+            0.38119422578952533, # S0
+            -0.8318010822308656, # S1
+            -0.8870243905947405, # W0
+            2.088898337902962, # W1
+            1.1853836538384535, # W2
         )
 
     # ============================
@@ -126,6 +144,17 @@ class Robot():
     '''
 
     OCCUPANCY_GRID = (40, 30) # cols, rows
+    GRIPPER_OPEN = 100
+    GRIPPER_CLOSED = 20
+
+    # The following lines are copied from exact positions
+    # TOP_LEFT = (0.757, 0.433, -0.332,)
+    # TOP_RIGHT = (0.713, -0.646, -0.349,)
+    # BOTTOM_RIGHT = (0.056, -0.640, -0.366,)
+    COORDS = ( # X (Forwards/Backwards), Y (Left/Right), Z (Up/Down)
+        (0.725, 0.430, -0.350), # Top Left
+        (0.060, -0.640, -0.350), # Bottom Right
+    )
 
     # ===========
     # Constructor
@@ -135,25 +164,21 @@ class Robot():
         self.cam_r = Camera(Topics.Camera.RIGHT)
 
         # create digital ios
+        self.dig_l_cuff_circle = DigitalIO(Topics.DigitalIO.LEFT_LOWER_BUTTON)
+        self.dig_l_cuff_line = DigitalIO(Topics.DigitalIO.LEFT_UPPER_BUTTON)
         self.dig_l_forearm_ok = DigitalIO(Topics.DigitalIO.LEFT_BUTTON_OK)
         self.dig_l_shoulder = DigitalIO(Topics.DigitalIO.LEFT_SHOULDER_BUTTON)
         self.dig_l_torso_ok = DigitalIO(Topics.DigitalIO.TORSO_LEFT_BUTTON_OK)
+        self.dig_r_cuff_circle = DigitalIO(Topics.DigitalIO.RIGHT_LOWER_BUTTON)
+        self.dig_r_cuff_line = DigitalIO(Topics.DigitalIO.RIGHT_UPPER_BUTTON)
         self.dig_r_forearm_ok = DigitalIO(Topics.DigitalIO.RIGHT_BUTTON_OK)
         self.dig_r_shoulder = DigitalIO(Topics.DigitalIO.RIGHT_SHOULDER_BUTTON)
 
+        # create grippers
+        self.grip_l = Gripper(Topics.Gripper.LEFT)
+        self.grip_r = Gripper(Topics.Gripper.RIGHT)
+
         # create image processors
-        # self.img_l = Image_Processor(
-        #     Topics.Camera.LEFT,
-        #     find_table = True,
-        #     process_table = True,
-        #     table_occu = True
-        # )
-        # self.img_r = Image_Processor(
-        #     Topics.Camera.RIGHT,
-        #     find_table = True,
-        #     process_table = True,
-        #     table_occu = True
-        # )
         self.img_l = Image_Processor_V2(
             Topics.Camera.LEFT,
             Robot.OCCUPANCY_GRID,
@@ -195,11 +220,17 @@ class Robot():
         return [
             self.cam_l,
             self.cam_r,
+            self.dig_l_cuff_circle,
+            self.dig_l_cuff_line,
             self.dig_l_forearm_ok,
             self.dig_l_shoulder,
             self.dig_l_torso_ok,
+            self.dig_r_cuff_circle,
+            self.dig_r_cuff_line,
             self.dig_r_forearm_ok,
             self.dig_r_shoulder,
+            self.grip_l,
+            self.grip_r,
             self.img_l,
             self.img_r,
             self.limb_l,
@@ -263,9 +294,35 @@ class Robot():
     def _state_change_l_shoulder(self, val: bool) -> None:
         ''' State-Change Callback - Left Shoulder Button. '''
         if val: 
-            print('Moving Limbs to Initialize Position')
-            self.move_init()
-            print('Done moving limbs to INIT.')
+            print('Running Main Program')
+
+            # move to init
+            print('| - Moving Limbs to Initialize Position')
+            self.move_init(5)
+            print('|\t| - Done')
+
+            # detach implements
+            self.gripper_attach(False)
+
+            # move to camera position
+            print('| - Moving to Camera Position')
+            self.move_camera()
+            print('|\t| - Done')
+
+            # getting occupancy grid
+            print('| - Getting Occupancy Grid')
+            occ_bool, occ_uint8 = self.img_r.get_occ(5)
+            print(
+                '|\t| - Occupancy Grid BOOL: ' \
+                + self.display_occupancy(
+                    occ_bool, 
+                    bool
+                ).replace('\n', '\n|\t|\t')
+            )
+            print('|\t| - Done')
+
+            # attach gripper implements
+            self.gripper_attach(True)
 
     # =====================================
     # State-Change Callback - Left Torso OK
@@ -328,45 +385,104 @@ class Robot():
 
         output: str = '[\n'
         for row in grid:
+            output += '\t['
             if _type is int:
-                output += '\t' + ', '.join([f'{cell:03}' for cell in row])
+                output += ', '.join([f'{cell:03}' for cell in row])
             elif _type is bool:
-                output += '\t' + ', '.join([str(int(cell)) for cell in row])
+                output += ', '.join([str(int(cell)) for cell in row])
+            output += '],\n'
         output += ']'
 
         return output
 
+    # ==================================
+    # Attach / Detach Gripper Implements
+    def gripper_attach(self, attach: bool = True) -> None:
+        ''' Attach / Detach Gripper Implements. '''
+
+        # move to gripper position
+        print('| - Moving Limbs to Attach/Detach Position')
+        self.move_attach(5)
+        print('|\t| - Done')
+
+        # open grippers
+        print('| - Opening Left Gripper on Circle Cuff Press')
+        while not self.dig_l_cuff_circle.state: pass
+        print('|\t| - Opening Left Gripper')
+        self.grip_l.set_pos(Robot.GRIPPER_OPEN)
+        print('| - Opening Right Gripper on Circle Cuff Press')
+        while not self.dig_r_cuff_circle.state: pass
+        print('|\t| - Opening Right Gripper')
+        self.grip_r.set_pos(Robot.GRIPPER_OPEN)
+
+        # attach
+        if attach:
+            print('| - Closing Left Gripper on Dash Cuff Press')
+            while not self.dig_l_cuff_line.state: pass
+            print('|\t| - Closing Left Gripper')
+            self.grip_l.set_pos(Robot.GRIPPER_CLOSED)
+            print('| - Closing Right Gripper on Dash Cuff Press')
+            while not self.dig_r_cuff_line.state: pass
+            self.grip_r.set_pos(Robot.GRIPPER_CLOSED)
+
+        print('| - Finishing on Left Cuff Circle Press')
+        while not self.dig_l_cuff_circle.state: pass
+        print('|\t| - Done')
+
+
     # ====================================
     # Move Limbs to Attach/Detach Position
-    def move_attach(self) -> None:
+    def move_attach(self, timeout=0) -> None:
         ''' Move Limbs to Attach/Detach Position. '''
         self._move_limbs(
             POSES.ATTACH_DETACH.L,
             POSES.ATTACH_DETACH.R,
             skip_l = True,
             skip_r = True,
+            timeout_l=timeout,
+            timeout_r=timeout
         )
             
     # ===========================================
     # Move Limbs to Camera Table Capture Position
     def move_camera(self) -> None:
         ''' Move Limbs to Camera Table Capture Position. '''
-        self._move_limbs(
-            POSES.CAM_TABLE.L,
-            POSES.CAM_TABLE.R,
-            skip_l = True,
-            skip_r = True,
+        # self._move_limbs(
+        #     POSES.CAM_TABLE.L,
+        #     POSES.CAM_TABLE.R,
+        #     skip_l = True,
+        #     skip_r = True,
+        # )
+        self.limb_l.set_positions(
+            e0 = POSES.CAM_TABLE.L[0],
+            e1 = POSES.CAM_TABLE.L[1],
+            s0 = POSES.CAM_TABLE.L[2],
+            s1 = POSES.CAM_TABLE.L[3],
+            w0 = POSES.CAM_TABLE.L[4],
+            w1 = POSES.CAM_TABLE.L[5],
+            w2 = POSES.CAM_TABLE.L[6],
+        )
+        self.limb_r.set_positions(
+            e0 = POSES.CAM_TABLE.R[0],
+            e1 = POSES.CAM_TABLE.R[1],
+            s0 = POSES.CAM_TABLE.R[2],
+            s1 = POSES.CAM_TABLE.R[3],
+            w0 = POSES.CAM_TABLE.R[4],
+            w1 = POSES.CAM_TABLE.R[5],
+            w2 = POSES.CAM_TABLE.R[6],
         )
 
     # =================================
     # Move Limbs to Initialize Position
-    def move_init(self) -> None:
+    def move_init(self, timeout=0) -> None:
         ''' Move Limbs to Initialize Position. '''
         self._move_limbs(
             POSES.INIT.L,
             POSES.INIT.R,
             skip_l = True,
             skip_r = True,
+            timeout_l=timeout,
+            timeout_r=timeout
         )
 
 

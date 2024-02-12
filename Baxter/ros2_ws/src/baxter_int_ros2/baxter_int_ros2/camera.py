@@ -1234,7 +1234,7 @@ class Image_Processor_V2(ROS2_Node):
             msgCameraData,
             f'{self.topic_table}/occupancy/uint8'
         )
-        
+
         if self._V: 
             self.log(
                 f'| - Created\n' \
@@ -1468,8 +1468,8 @@ class Image_Processor_V2(ROS2_Node):
         Returns
         -
         - `Tuple[A, B]`
-            - `A = List[List[int]]` : 2D occupancy UINT8 grid.
-            - `B = List[List[bool]]` : 2D occupancy BOOL grid.
+            - `A = List[List[int]]` : 2D occupancy BOOL grid.
+            - `B = List[List[int]]` : 2D occupancy UINT8 grid.
         '''
 
         self.log(f'Getting Occupancy Grids {self}')
