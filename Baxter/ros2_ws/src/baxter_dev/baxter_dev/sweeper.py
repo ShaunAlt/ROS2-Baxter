@@ -200,6 +200,8 @@ class Robot():
             self.dig_l_torso_ok,
             self.dig_r_forearm_ok,
             self.dig_r_shoulder,
+            self.img_l,
+            self.img_r,
             self.limb_l,
             self.limb_r,
         ]

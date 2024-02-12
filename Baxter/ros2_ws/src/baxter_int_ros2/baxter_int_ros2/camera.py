@@ -1415,7 +1415,9 @@ class Image_Processor_V2(ROS2_Node):
         '''
 
         # update data
+        self.log(f'Reading Camera Data {self}')
         self._data_cam = MSG_CameraData.from_msg(msg)
+        self.log(f'Camera Data Subscriber - Finding Table {self._table_find}')
         if self._table_find: self.table_find()
     
     # ================================
@@ -1438,7 +1440,9 @@ class Image_Processor_V2(ROS2_Node):
         '''
 
         # update data
+        self.log(f'Reading Table Data {self}')
         self._data_table = MSG_CameraData.from_msg(msg)
+        self.log(f'Table Data Sub - Process Table {self._table_process}')
         if self._table_process: self.table_process()
 
     # ===================
@@ -1522,6 +1526,7 @@ class Image_Processor_V2(ROS2_Node):
         '''
 
         # make sure data exists
+        self.log(f'Image Processor Table Find {self}')
         if self._data_cam is None:
             raise RuntimeWarning(
                 f'Image_Processor {self} tried to find_table with no' \
@@ -1590,6 +1595,7 @@ class Image_Processor_V2(ROS2_Node):
             table_key_points = doc_points
         
         # publish camera data
+        self.log(f'Image Processor Table Find - Publishing Steps {self}')
         if self._V:
             self.data_cam_gray = MSG_CameraData(
                 image = img_gray.flatten().tolist(), # type: ignore
@@ -1628,9 +1634,10 @@ class Image_Processor_V2(ROS2_Node):
             )
 
         # create warped image
+        self.log(f'Image Processor - Find Table - Warping Image {self}')
         img_warped: Union[None, MatLike] = None
         if table_key_points is not None:
-            img_warped = Image_Processor.PyImageSearch.four_point_transform(
+            img_warped = Image_Processor_V2.PyImageSearch.four_point_transform(
                 img.copy(),
                 table_key_points
             )
@@ -1645,6 +1652,7 @@ class Image_Processor_V2(ROS2_Node):
             )
             self.data_table = msg
             self._table_find = False
+            self.log(f'Found Table {self}')
         return None
 
     # ===================================================
@@ -1665,6 +1673,7 @@ class Image_Processor_V2(ROS2_Node):
         '''
 
         # make sure data exists
+        self.log(f'Image Processor Table Process {self}')
         if self._data_table is None:
             raise RuntimeWarning(
                 f'Image_Processor {self} tried to process_table with no' \
@@ -1686,6 +1695,7 @@ class Image_Processor_V2(ROS2_Node):
         img_edge_blur = cv2.GaussianBlur(img_edge.copy(), (7, 7), 0)
 
         # publish table edge data
+        self.log(f'Process Table - Middle Steps Publish {self}')
         if self._V:
             self.data_table_edge_blur = MSG_CameraData(
                 image = img_edge_blur.flatten().tolist(), # type: ignore
@@ -1696,6 +1706,7 @@ class Image_Processor_V2(ROS2_Node):
             )
 
         # create and publish occupancy grid if required
+        self.log(f'Process Table - Get Occupancy Grids')
         occ_data_uint8, occ_img_uint8 = Image_Processor.create_occupancy(
             img_edge_blur,
             self._occ_dim[1],
@@ -1726,6 +1737,7 @@ class Image_Processor_V2(ROS2_Node):
         self.data_occ_bool = occ_data_bool
         self.data_occ_uint8 = occ_data_uint8
         self._table_process = False
+        self.log(f'Processed Table')
         return None
 
     # =====================
@@ -1944,7 +1956,7 @@ class Image_Processor_V2(ROS2_Node):
 
             # obtain a consistent order of the points and unpack them
             # individually
-            rect = Image_Processor.PyImageSearch.order_points(pts)
+            rect = Image_Processor_V2.PyImageSearch.order_points(pts)
             (tl, tr, br, bl) = rect
             # compute the width of the new image, which will be the
             # maximum distance between bottom-right and bottom-left
