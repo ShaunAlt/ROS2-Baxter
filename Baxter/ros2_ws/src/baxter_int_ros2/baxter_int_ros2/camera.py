@@ -1366,14 +1366,14 @@ class Image_Processor_V2(ROS2_Node):
     @property
     def topic_cam(self) -> str:
         ''' Topic - Camera Data. '''
-        return f'{self._topic}/{Topics.Camera.IMAGE_DATA}'
+        return f'/cameras/{self._topic}/{Topics.Camera.IMAGE_DATA}'
 
     # ==================
     # Topic - Table Data
     @property
     def topic_table(self) -> str:
         ''' Topic - Table Data. '''
-        return f'{self._topic}/{Topics.Camera.PROCESS_DATA_TABLE}'
+        return f'/cameras/{self._topic}/{Topics.Camera.PROCESS_DATA_TABLE}'
     
     # =========================
     # ROS2_obj: Get Object Data
