@@ -1506,7 +1506,8 @@ class Image_Processor_V2(ROS2_Node):
         self._data_occ_uint8 = None
         self._data_table = None
         self._table_find = True
-        self._table_process = True
+        self._table_process = False
+        # self._table_process = True
 
     # ==========================================
     # Table Process - Find Table in Camera Image
@@ -1653,6 +1654,7 @@ class Image_Processor_V2(ROS2_Node):
             )
             self.data_table = msg
             self._table_find = False
+            self._table_process = True
             self.log(f'Found Table {self}')
         else:
             self._table_find = True
