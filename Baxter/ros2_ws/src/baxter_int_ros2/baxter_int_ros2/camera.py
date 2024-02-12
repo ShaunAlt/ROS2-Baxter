@@ -1415,9 +1415,9 @@ class Image_Processor_V2(ROS2_Node):
         '''
 
         # update data
-        self.log(f'Reading Camera Data {self}')
+        # self.log(f'Reading Camera Data {self}')
         self._data_cam = MSG_CameraData.from_msg(msg)
-        self.log(f'Camera Data Subscriber - Finding Table {self._table_find}')
+        # self.log(f'Camera Data Subscriber - Finding Table {self._table_find}')
         if self._table_find: self.table_find()
     
     # ================================
@@ -1440,9 +1440,9 @@ class Image_Processor_V2(ROS2_Node):
         '''
 
         # update data
-        self.log(f'Reading Table Data {self}')
+        # self.log(f'Reading Table Data {self}')
         self._data_table = MSG_CameraData.from_msg(msg)
-        self.log(f'Table Data Sub - Process Table {self._table_process}')
+        # self.log(f'Table Data Sub - Process Table {self._table_process}')
         if self._table_process: self.table_process()
 
     # ===================
@@ -1526,6 +1526,7 @@ class Image_Processor_V2(ROS2_Node):
         '''
 
         # make sure data exists
+        self._table_find = False
         self.log(f'Image Processor Table Find {self}')
         if self._data_cam is None:
             raise RuntimeWarning(
@@ -1599,36 +1600,36 @@ class Image_Processor_V2(ROS2_Node):
         if self._V:
             self.data_cam_gray = MSG_CameraData(
                 image = img_gray.flatten().tolist(), # type: ignore
-                width = self._data.width,
-                height = self._data.height,
+                width = self._data_cam.width,
+                height = self._data_cam.height,
                 channels = 1,
                 skip_validation = True
             )
             self.data_cam_blur = MSG_CameraData(
                 image = img_blur.flatten().tolist(), # type: ignore
-                width = self._data.width,
-                height = self._data.height,
+                width = self._data_cam.width,
+                height = self._data_cam.height,
                 channels = 1,
                 skip_validation = True
             )
             self.data_cam_edge = MSG_CameraData(
                 image = img_edge.flatten().tolist(), # type: ignore
-                width = self._data.width,
-                height = self._data.height,
+                width = self._data_cam.width,
+                height = self._data_cam.height,
                 channels = 1,
                 skip_validation = True
             )
             self.data_cam_edge_blur = MSG_CameraData(
                 image = img_edge_blur.flatten().tolist(), # type: ignore
-                width = self._data.width,
-                height = self._data.height,
+                width = self._data_cam.width,
+                height = self._data_cam.height,
                 channels = 1,
                 skip_validation = True
             )
             self.data_cam_contours = MSG_CameraData(
                 image = img_contour.flatten().tolist(), # type: ignore
-                width = self._data.width,
-                height = self._data.height,
+                width = self._data_cam.width,
+                height = self._data_cam.height,
                 channels = 3,
                 skip_validation = True
             )
@@ -1653,6 +1654,8 @@ class Image_Processor_V2(ROS2_Node):
             self.data_table = msg
             self._table_find = False
             self.log(f'Found Table {self}')
+        else:
+            self._table_find = True
         return None
 
     # ===================================================
@@ -1673,6 +1676,7 @@ class Image_Processor_V2(ROS2_Node):
         '''
 
         # make sure data exists
+        self._table_process = False
         self.log(f'Image Processor Table Process {self}')
         if self._data_table is None:
             raise RuntimeWarning(
@@ -1736,7 +1740,6 @@ class Image_Processor_V2(ROS2_Node):
         )
         self.data_occ_bool = occ_data_bool
         self.data_occ_uint8 = occ_data_uint8
-        self._table_process = False
         self.log(f'Processed Table')
         return None
 
