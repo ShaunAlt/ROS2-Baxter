@@ -22,8 +22,13 @@ import sys
 from typing import (
     Any,
     List,
+    Optional,
+    Tuple,
     TYPE_CHECKING,
 )
+
+# used for math
+import math
 
 # used for multi-threading
 from threading import Thread
@@ -70,6 +75,10 @@ Slowly change W and Y (so the square sum is 1) to make the angle left and
 Y will always be positive, W between -1 and 1.
 '''
 
+_POINT_2D = Tuple[int, int]
+_POINT_3D = Tuple[int, int, int]
+_POS_2D = Tuple[float, float]
+_POS_3D = Tuple[float, float, float]
 
 # =============================================================================
 # Preset Poses
@@ -151,9 +160,14 @@ class Robot():
     # TOP_LEFT = (0.757, 0.433, -0.332,)
     # TOP_RIGHT = (0.713, -0.646, -0.349,)
     # BOTTOM_RIGHT = (0.056, -0.640, -0.366,)
-    COORDS = ( # X (Forwards/Backwards), Y (Left/Right), Z (Up/Down)
+    COORDS_BRUSH = ( # X (Forwards/Backwards), Y (Left/Right), Z (Up/Down)
         (0.725, 0.430, -0.350), # Top Left
         (0.060, -0.640, -0.350), # Bottom Right
+    )
+    COORDS_PAN = ( # X (Forwards/Backwards), Y (Left/Right), Z (Up/Down)
+        (0, 0, 0), # Top Left
+        (0, 0, 0), # Bottom Right
+        (0, 0, 0), # Bottom Left
     )
 
     # ===========
@@ -321,8 +335,65 @@ class Robot():
             )
             print('|\t| - Done')
 
+            # check point to clean
+            print('| - Calculating Next Point to Clean')
+            clean_point = self.get_pixel(occ_bool)
+            if clean_point is None: 
+                print('|\t| - No cleaning required')
+                print('| - Done')
+                return
+            pos_brush_org, pos_pan_org = Robot.get_pixel_pos(
+                clean_point, 
+                (occ_bool.size[1], occ_bool.size[0])
+            )
+            pos_brush_new, pos_pan_new = (
+                (pos_brush_org[0], pos_brush_org[1]-0.2, pos_brush_org[2]),
+                (pos_pan_org[0], pos_pan_org[1]-0.2, pos_pan_org[2]),
+            )
+            print(f'|\t| - Point to Clean: {clean_point}')
+            print(f'|\t| - Brush Point: {pos_brush_org} -> {pos_brush_new}')
+            print(f'|\t| - Pan Point: {pos_pan_org} -> {pos_pan_new}')
+            occ_bool[clean_point[1]][clean_point[0]] = 2
+            print(
+                '|\t| - Occupancy Grid to Clean: ' \
+                + self.display_occupancy(
+                    occ_bool,
+                    bool
+                ).replace('\n', '\n|\t|\t')
+            )
+
             # attach gripper implements
             self.gripper_attach(True)
+
+            # move to positions
+            print('| - Moving to Sweep Starting Positions')
+            self._move_limbs(
+                target_l = MSG_Pose.from_coords(
+                    pos_pan_new,
+                    (0.0, math.sqrt(2), 0.0, -1*math.sqrt(2))
+                ),
+                target_r = MSG_Pose.from_coords(
+                    pos_brush_new,
+                    (0.0, 1.0, 0.0, 0.0)
+                ),
+                skip_l = True,
+                skip_r = True,
+                timeout_l = 10,
+                timeout_r = 10
+            )
+            print('|\t| - Done')
+
+            # sweep
+            print('| - Sweeping')
+            self.limb_r.set_endpoint(
+                pose = MSG_Pose.from_coords(
+                    (pos_brush_new[0], pos_brush_new[1]+0.4, pos_brush_new[2]),
+                    (0.0, 1.0, 0.0, 0.0)
+                ),
+                cartesian = True,
+                timeout = 10
+            )
+            print('|\t| - Finished Sweeping')
 
     # =====================================
     # State-Change Callback - Left Torso OK
@@ -395,6 +466,118 @@ class Robot():
 
         return output
 
+    # ==================
+    # Get Pixel Position
+    @staticmethod
+    def get_pixel_pos(point: _POINT_2D, size: _POINT_2D) -> Tuple[_POS_3D, _POS_3D]:
+        '''
+        Get Pixel Position
+        -
+        Gets the position of a occupancy grid pixel in Baxter's frame of
+        reference.
+
+        Parameters
+        -
+        - point : `_POINT_2D`
+            - X and Y coordinates of the point in the occupancy grid.
+        - size : `_POINT_2D`
+            - Width and Height of the occupancy grid.
+
+        Returns
+        -
+        `Tuple[_POS_3D, _POS_3D]`
+            - `[0]`: Brush Position.
+            - `[1]`: Dustpan Position.
+        '''
+
+        return (
+            ( # Brush
+                (
+                    Robot.COORDS_BRUSH[1][0] \
+                    + (
+                        (point[1] / size[1]) \
+                        * (Robot.COORDS_BRUSH[0][0] - Robot.COORDS_BRUSH[1][0])
+                    )
+                ), # X (F/B)
+                (
+                    Robot.COORDS_BRUSH[1][1] \
+                    + (
+                        (point[0] / size[0]) \
+                        * (Robot.COORDS_BRUSH[0][1] - Robot.COORDS_BRUSH[1][1])
+                    )
+                ), # Y (L/R)
+                Robot.COORDS_BRUSH[0][2], # Z (U/D)
+            ),
+            ( # Dustpan
+                (
+                    Robot.COORDS_PAN[1][0] \
+                    + (
+                        (point[1] / size[1]) \
+                        * (Robot.COORDS_PAN[0][0] - Robot.COORDS_PAN[1][0])
+                    )
+                ), # X (F/B)
+                (
+                    Robot.COORDS_PAN[1][1] \
+                    + (
+                        (point[0] / size[0]) \
+                        * (Robot.COORDS_PAN[0][1] - Robot.COORDS_PAN[1][1])
+                    )
+                ), # Y (L/R)
+                Robot.COORDS_PAN[0][2], # Z (U/D)
+            ),
+        )
+
+    # ==================
+    # Get Pixel to Clean
+    def get_pixel(self, grid: List[List[int]]) -> Optional[_POINT_2D]:
+        '''
+        Get Pixel to Clean
+        -
+        Uses the `bool` occupancy grid (1 and 0) to get the pixel to clean
+        (closest to the bottom-right corner of the table), and identifies it's
+        position using Baxter coordinate system.
+
+        Parameters
+        -
+        - grid : `2d numpy array`
+            - 2d bool occupancy grid. 1 = Occupancy. 0 = Nothing.
+        
+        Returns
+        -
+        `_POINT_2D | None`
+            - Index X and Y. Top-Left = (0,0), Bottom-Right = 
+                (MAX_COLS-1, MAX_ROWS-1).
+            - `None` if all pixels are clean.
+        '''
+
+        def _calculate_distance(x1, y1, x2, y2) -> float:
+            return ((x1-x2)**2) + ((y1-y2)**2)
+
+        num_rows: int = grid.size[0]
+        num_cols: int = grid.size[1]
+        closest_pixel: Optional[_POINT_2D] = None
+        for y, row in enumerate(grid):
+            for x, cell in enumerate(row):
+                if int(cell) == 1: # occupied
+                    if closest_pixel is None:
+                        closest_pixel = (x, y)
+                    elif (
+                            _calculate_distance(
+                                x,
+                                y, 
+                                num_cols-1, 
+                                num_rows-1
+                            ) < _calculate_distance(
+                                closest_pixel[0], 
+                                closest_pixel[1], 
+                                num_cols-1, 
+                                num_rows-1
+                            )
+                    ):
+                        closest_pixel = (x, y)
+
+        return closest_pixel
+
     # ==================================
     # Attach / Detach Gripper Implements
     def gripper_attach(self, attach: bool = True) -> None:
@@ -428,7 +611,6 @@ class Robot():
         print('| - Finishing on Left Cuff Circle Press')
         while not self.dig_l_cuff_circle.state: pass
         print('|\t| - Done')
-
 
     # ====================================
     # Move Limbs to Attach/Detach Position
