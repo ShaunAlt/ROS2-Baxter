@@ -1234,10 +1234,7 @@ class Image_Processor_V2(ROS2_Node):
             msgCameraData,
             f'{self.topic_table}/occupancy/uint8'
         )
-
-        # initializing image streaming topics
-
-
+        
         if self._V: 
             self.log(
                 f'| - Created\n' \
