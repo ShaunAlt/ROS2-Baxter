@@ -1459,7 +1459,7 @@ class Image_Processor_V2(ROS2_Node):
         Parameters
         -
         - _type : `Any`
-            - Type of grid to be displayed.
+            - Type of grid to be displayed.c
             - Valid Options:
                 - `Type[int]` : UINT8 Occupancy Grid.
                 - `Type[bool]` : BOOL Occupancy Grid.

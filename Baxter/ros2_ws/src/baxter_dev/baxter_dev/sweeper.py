@@ -27,6 +27,8 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from contextlib import suppress
+
 # used for math
 import math
 
@@ -322,20 +324,14 @@ class Robot():
 
             # move to init
             print('| - Moving Limbs to Initialize Position')
-            try:
-                self.move_init(20)
-            except:
-                pass
+            with suppress(): self.move_init(20)
             print('|\t| - Done')
 
             # calibrate grippers
-            try:
-                self.grip_l.configure()
-                self.grip_r.configure()
-                self.grip_l.calibrate()
-                self.grip_r.calibrate()
-            except:
-                pass
+            with suppress(): self.grip_l.configure()
+            with suppress(): self.grip_l.calibrate()
+            with suppress(): self.grip_r.configure()
+            with suppress(): self.grip_r.calibrate()
 
             # detach implements
             self.gripper_attach(False)
@@ -343,22 +339,16 @@ class Robot():
             # move to camera position
             #! NEED TO INITIALIZE GRIPPER
             print('| - Moving to Camera Position')
-            try:
-                self.move_camera(20)
-            except:
-                pass
+            with suppress(): self.move_camera(20)
             print('|\t| - Done - Waiting for Left Cuff Circle Press.')
             df_wait(
                 lambda: self.dig_l_cuff_circle.state,
                 self.dig_l_cuff_circle
             )
-            # print('|\t| - Done (Waiting 10s)')
-            # time.sleep(10)
-            # print('|\t| - Done Waiting 10s')
 
             # getting occupancy grid
             print('| - Getting Occupancy Grid')
-            occ_bool, occ_uint8 = self.img_r.get_occ(10)
+            with suppress(): occ_bool, occ_uint8 = self.img_r.get_occ(10)
             print(
                 '|\t| - Occupancy Grid BOOL: ' \
                 + self.img_r.display_occupancy_grid(bool).replace(
@@ -382,7 +372,7 @@ class Robot():
             )
             pos_brush_new, pos_pan_new = (
                 (pos_brush_org[0], pos_brush_org[1]-0.2, pos_brush_org[2]),
-                (pos_pan_org[0], pos_pan_org[1]-0.2, pos_pan_org[2]),
+                (pos_pan_org[0], pos_pan_org[1]+0.2, pos_pan_org[2]),
             )
             print(f'|\t| - Brush Point: {pos_brush_org} -> {pos_brush_new}')
             print(f'|\t| - Pan Point: {pos_pan_org} -> {pos_pan_new}')
@@ -400,7 +390,7 @@ class Robot():
 
             # move to positions
             print('| - Moving to Sweep Starting Positions')
-            try:
+            with suppress():
                 self._move_limbs(
                     target_l = MSG_Pose.from_coords(
                         pos_pan_new,
@@ -415,13 +405,11 @@ class Robot():
                     timeout_l = 20,
                     timeout_r = 20
                 )
-            except:
-                pass
             print('|\t| - Done')
 
             # sweep
             print('| - Sweeping')
-            try:
+            with suppress():
                 self.limb_r.set_endpoint(
                     pose = MSG_Pose.from_coords(
                         (pos_brush_new[0], pos_brush_new[1]+0.4, pos_brush_new[2]),
@@ -430,8 +418,6 @@ class Robot():
                     cartesian = True,
                     timeout = 10
                 )
-            except:
-                pass
             print('|\t| - Finished Sweeping')
             self.running_main = False
 
@@ -644,42 +630,37 @@ class Robot():
 
         # open grippers
         print('| - Opening Left Gripper on Circle Cuff Press')
-        # while not self.dig_l_cuff_circle.state: pass
         df_wait(
             lambda: self.dig_l_cuff_circle.state,
             self.dig_l_cuff_circle
         )
         print('|\t| - Opening Left Gripper')
-        self.grip_l.set_pos(Robot.GRIPPER_OPEN)
+        with suppress(): self.grip_l.set_pos(Robot.GRIPPER_OPEN)
         print('| - Opening Right Gripper on Circle Cuff Press')
-        # while not self.dig_r_cuff_circle.state: pass
         df_wait(
             lambda: self.dig_r_cuff_circle.state,
             self.dig_r_cuff_circle
         )
         print('|\t| - Opening Right Gripper')
-        self.grip_r.set_pos(Robot.GRIPPER_OPEN)
+        with suppress(): self.grip_r.set_pos(Robot.GRIPPER_OPEN)
 
         # attach
         if attach:
             print('| - Closing Left Gripper on Dash Cuff Press')
-            # while not self.dig_l_cuff_line.state: pass
             df_wait(
                 lambda: self.dig_l_cuff_line.state,
                 self.dig_l_cuff_line
             )
             print('|\t| - Closing Left Gripper')
-            self.grip_l.set_pos(Robot.GRIPPER_CLOSED)
+            with suppress(): self.grip_l.set_pos(Robot.GRIPPER_CLOSED)
             print('| - Closing Right Gripper on Dash Cuff Press')
-            # while not self.dig_r_cuff_line.state: pass
             df_wait(
                 lambda: self.dig_r_cuff_line.state,
                 self.dig_r_cuff_line
             )
-            self.grip_r.set_pos(Robot.GRIPPER_CLOSED)
+            with suppress(): self.grip_r.set_pos(Robot.GRIPPER_CLOSED)
 
         print('| - Finishing on Left Cuff Circle Press')
-        # while not self.dig_l_cuff_circle.state: pass
         df_wait(
             lambda: self.dig_l_cuff_circle.state,
             self.dig_l_cuff_circle
