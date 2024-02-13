@@ -105,6 +105,18 @@ class POSES():
             (0.0, 1.0, 0.0, 0.0,)
         )
 
+    # ==============
+    # Get Space Pose
+    class SPACE():
+        L = MSG_Pose.from_coords(
+            (0.8, 0.5, 0.25,),
+            (0.0, 1.0, 0.0, 0.0,)
+        )
+        R = MSG_Pose.from_coords(
+            (0.8, -0.5, 0.25,),
+            (0.0, 1.0, 0.0, 0.0,)
+        )
+
     # ======================
     # Camera View Table Pose
     class CAM_TABLE():
@@ -116,24 +128,6 @@ class POSES():
             (0.6, 0.0, 0.47,),
             (0.0, 1.0, 0.0, 0.0,)
         )
-        # L = (
-        #     0.6143593055481082, # E0
-        #     0.9928690649588341, # E1
-        #     -0.2634612003193198, # S0
-        #     -0.2592427531526349, # S1
-        #     -0.21399031991001521, # W0
-        #     0.5756262906540015, # W1
-        #     0.5871311465631421, # W0
-        # )
-        # R = (
-        #     1.9569759901448165, # E0
-        #     1.2586312364599819, # E1
-        #     0.38119422578952533, # S0
-        #     -0.8318010822308656, # S1
-        #     -0.8870243905947405, # W0
-        #     2.088898337902962, # W1
-        #     1.1853836538384535, # W2
-        # )
 
     # ============================
     # Implement Attach/Detach Pose
@@ -397,14 +391,22 @@ class Robot():
 
             # move both arms out of the way
             print('| - Moving Arms out of Collision Space')
-            self.limb_l.set_positions(s0 = 1.5)
-            self.limb_r.set_positions(s0 = -1.5)
-            print('|\t| - Starting next movement on Left Circle Cuff Press')
-            df_wait(
-                lambda: self.dig_l_cuff_circle.state,
-                self.dig_l_cuff_circle
+            # self.limb_l.set_positions(s0 = 1.5)
+            # self.limb_r.set_positions(s0 = -1.5)
+            # time.sleep(3)
+            # print('|\t| - Starting next movement on Left Circle Cuff Press')
+            # df_wait(
+            #     lambda: self.dig_l_cuff_circle.state,
+            #     self.dig_l_cuff_circle
+            # )
+            self._move_limbs(
+                POSES.SPACE.L,
+                POSES.SPACE.R,
+                skip_l = True,
+                skip_r = True,
+                timeout_l = 20,
+                timeout_r = 20
             )
-
 
             # move to positions
             print('| - Moving to Sweep Starting Positions')
@@ -418,10 +420,12 @@ class Robot():
                         pos_brush_new,
                         (0.0, 1.0, 0.0, 0.0)
                     ),
-                    skip_l = True,
-                    skip_r = True,
-                    timeout_l = 20,
-                    timeout_r = 20
+                    # skip_l = True,
+                    # skip_r = True,
+                    cartesian_l = True,
+                    cartesian_r = True,
+                    timeout_l = 30,
+                    timeout_r = 30
                 )
             print('|\t| - Done')
 

@@ -254,7 +254,7 @@ def ros1_tuck(tuck):
         + '| 1. Creates a new terminal tab.                           |\n' \
         + '| 2. Runs `baxter_init`.                                   |\n' \
         + '| 3. Waits 2 seconds for the script to finish.             |\n' \
-        + f'| 4. Runs the `tuck_arms.py` script with the -{a} parameter   |\n' \
+        + f'| 4. Runs the `tuck_arms.py` script with the -{a} parameter  |\n' \
         + f'|    to {b.lower()} Baxter\'s Arms. {" "*c*2}                  ' \
         + '           |\n' \
         + '|----------------------------------------------------------|\n' \
