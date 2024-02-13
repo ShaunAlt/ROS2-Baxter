@@ -106,32 +106,32 @@ class POSES():
     # ======================
     # Camera View Table Pose
     class CAM_TABLE():
-        # L = MSG_Pose.from_coords(
-        #     (0.6, 0.7, 0.2,),
-        #     (0.0, 1.0, 0.0, 0.0,)
-        # )
-        # R = MSG_Pose.from_coords(
-        #     (0.6, 0.0, 0.47,),
-        #     (0.0, 1.0, 0.0, 0.0,)
-        # )
-        L = (
-            0.6143593055481082, # E0
-            0.9928690649588341, # E1
-            -0.2634612003193198, # S0
-            -0.2592427531526349, # S1
-            -0.21399031991001521, # W0
-            0.5756262906540015, # W1
-            0.5871311465631421, # W0
+        L = MSG_Pose.from_coords(
+            (0.6, 0.7, 0.2,),
+            (0.0, 1.0, 0.0, 0.0,)
         )
-        R = (
-            1.9569759901448165, # E0
-            1.2586312364599819, # E1
-            0.38119422578952533, # S0
-            -0.8318010822308656, # S1
-            -0.8870243905947405, # W0
-            2.088898337902962, # W1
-            1.1853836538384535, # W2
+        R = MSG_Pose.from_coords(
+            (0.6, 0.0, 0.47,),
+            (0.0, 1.0, 0.0, 0.0,)
         )
+        # L = (
+        #     0.6143593055481082, # E0
+        #     0.9928690649588341, # E1
+        #     -0.2634612003193198, # S0
+        #     -0.2592427531526349, # S1
+        #     -0.21399031991001521, # W0
+        #     0.5756262906540015, # W1
+        #     0.5871311465631421, # W0
+        # )
+        # R = (
+        #     1.9569759901448165, # E0
+        #     1.2586312364599819, # E1
+        #     0.38119422578952533, # S0
+        #     -0.8318010822308656, # S1
+        #     -0.8870243905947405, # W0
+        #     2.088898337902962, # W1
+        #     1.1853836538384535, # W2
+        # )
 
     # ============================
     # Implement Attach/Detach Pose
@@ -332,10 +332,10 @@ class Robot():
             # move to camera position
             #! NEED TO INITIALIZE GRIPPER
             print('| - Moving to Camera Position')
-            self.move_camera()
+            self.move_camera(10)
             print('|\t| - Done')
-            time.sleep(10)
-            print('|\t| - Done Waiting 10s')
+            # time.sleep(10)
+            # print('|\t| - Done Waiting 10s')
 
             # getting occupancy grid
             print('| - Getting Occupancy Grid')
@@ -661,32 +661,34 @@ class Robot():
             
     # ===========================================
     # Move Limbs to Camera Table Capture Position
-    def move_camera(self) -> None:
+    def move_camera(self, timeout=0) -> None:
         ''' Move Limbs to Camera Table Capture Position. '''
-        # self._move_limbs(
-        #     POSES.CAM_TABLE.L,
-        #     POSES.CAM_TABLE.R,
-        #     skip_l = True,
-        #     skip_r = True,
+        self._move_limbs(
+            POSES.CAM_TABLE.L,
+            POSES.CAM_TABLE.R,
+            skip_l = True,
+            skip_r = True,
+            timeout_l = timeout,
+            timeout_r = timeout
+        )
+        # self.limb_l.set_positions(
+        #     e0 = POSES.CAM_TABLE.L[0],
+        #     e1 = POSES.CAM_TABLE.L[1],
+        #     s0 = POSES.CAM_TABLE.L[2],
+        #     s1 = POSES.CAM_TABLE.L[3],
+        #     w0 = POSES.CAM_TABLE.L[4],
+        #     w1 = POSES.CAM_TABLE.L[5],
+        #     w2 = POSES.CAM_TABLE.L[6],
         # )
-        self.limb_l.set_positions(
-            e0 = POSES.CAM_TABLE.L[0],
-            e1 = POSES.CAM_TABLE.L[1],
-            s0 = POSES.CAM_TABLE.L[2],
-            s1 = POSES.CAM_TABLE.L[3],
-            w0 = POSES.CAM_TABLE.L[4],
-            w1 = POSES.CAM_TABLE.L[5],
-            w2 = POSES.CAM_TABLE.L[6],
-        )
-        self.limb_r.set_positions(
-            e0 = POSES.CAM_TABLE.R[0],
-            e1 = POSES.CAM_TABLE.R[1],
-            s0 = POSES.CAM_TABLE.R[2],
-            s1 = POSES.CAM_TABLE.R[3],
-            w0 = POSES.CAM_TABLE.R[4],
-            w1 = POSES.CAM_TABLE.R[5],
-            w2 = POSES.CAM_TABLE.R[6],
-        )
+        # self.limb_r.set_positions(
+        #     e0 = POSES.CAM_TABLE.R[0],
+        #     e1 = POSES.CAM_TABLE.R[1],
+        #     s0 = POSES.CAM_TABLE.R[2],
+        #     s1 = POSES.CAM_TABLE.R[3],
+        #     w0 = POSES.CAM_TABLE.R[4],
+        #     w1 = POSES.CAM_TABLE.R[5],
+        #     w2 = POSES.CAM_TABLE.R[6],
+        # )
 
     # =================================
     # Move Limbs to Initialize Position

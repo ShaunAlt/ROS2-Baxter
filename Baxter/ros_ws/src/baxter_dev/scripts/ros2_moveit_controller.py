@@ -569,6 +569,7 @@ class Controller():
         # define targets
         self._target_l: Optional[MSG_EndpointTarget] = None
         self._target_r: Optional[MSG_EndpointTarget] = None
+        self.planning: bool = False
 
         # create ROS2 subscriber
         rospy.loginfo('| - Creating Topic Subscriber (/baxter_ros2/endpoint_targets).')
@@ -789,6 +790,8 @@ class Controller():
             - Dict containing the joint names and positions.
         '''
 
+        while self.planning: pass
+        self.planning = True
         # initialize variables
         joint_names: list[str]
         move_group: moveit_commander.MoveGroupCommander
@@ -820,7 +823,7 @@ class Controller():
         joint_names = traj.joint_trajectory.joint_names
         points = traj.joint_trajectory.points
         points_num = len(points)
-
+        self.planning = False
         return [
             {
                 name: pt.positions[idx_n]
