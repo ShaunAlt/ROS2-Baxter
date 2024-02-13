@@ -109,11 +109,11 @@ class POSES():
     # Get Space Pose
     class SPACE():
         L = MSG_Pose.from_coords(
-            (0.8, 0.5, 0.25,),
+            (0.50, 0.45, -0.22,),
             (0.0, 1.0, 0.0, 0.0,)
         )
         R = MSG_Pose.from_coords(
-            (0.8, -0.5, 0.25,),
+            (0.44, -0.58, 0.24,),
             (0.0, 1.0, 0.0, 0.0,)
         )
 
