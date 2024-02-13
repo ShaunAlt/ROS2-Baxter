@@ -691,7 +691,7 @@ class Controller():
             tolerance: float = {
                 True: Controller.JOINT_TOLERANCE_SMALL,
                 False: Controller.JOINT_TOLERANCE_BIG,
-            }[(i == num_points-1) or (target.flag_cartesian)]
+            }[(i == num_points-1)] # or (target.flag_cartesian)]
             self.limb_l.move_to_joint_positions(point, threshold=tolerance)
             rospy.loginfo(f'Left Target Motion: Step {i+1}/{num_points} Done')
 
@@ -737,7 +737,7 @@ class Controller():
             tolerance: float = {
                 True: Controller.JOINT_TOLERANCE_SMALL,
                 False: Controller.JOINT_TOLERANCE_BIG,
-            }[(i == num_points-1) or (target.flag_cartesian)]
+            }[(i == num_points-1)] # or (target.flag_cartesian)]
             self.limb_r.move_to_joint_positions(point, threshold=tolerance)
             rospy.loginfo(f'Right Target Motion: Step {i+1}/{num_points} Done')
 
@@ -813,7 +813,7 @@ class Controller():
         if cartesian:
             (traj, _) = move_group.compute_cartesian_path(
                 [self.get_limb_pose(limb), goal.msg],
-                0.01,
+                0.05, # 0.01
                 0
             )
         else:

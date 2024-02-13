@@ -394,7 +394,7 @@ class Robot():
                 self._move_limbs(
                     target_l = MSG_Pose.from_coords(
                         pos_pan_new,
-                        (math.sqrt(2), math.sqrt(2), 0.0, 0.0)
+                        (math.sqrt(2)/2, math.sqrt(2)/2, 0.0, 0.0)
                     ),
                     target_r = MSG_Pose.from_coords(
                         pos_brush_new,
