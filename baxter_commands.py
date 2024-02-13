@@ -350,8 +350,8 @@ def main() -> None:
     if args.untuck or args.all: ros1_tuck(False)
     if args.bridge or args.all: bridge()
     if args.moveit or args.all: ros1_moveit()
-    if args.sweeper or args.all: sweeper()
     if args.image or args.all: image()
+    if args.sweeper or args.all: sweeper()
 
 if __name__ == '__main__':
     main()

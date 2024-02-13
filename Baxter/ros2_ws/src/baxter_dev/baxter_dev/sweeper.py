@@ -162,8 +162,8 @@ class Robot():
     # TOP_RIGHT = (0.713, -0.646, -0.349,)
     # BOTTOM_RIGHT = (0.056, -0.640, -0.366,)
     COORDS_BRUSH = ( # X (Forwards/Backwards), Y (Left/Right), Z (Up/Down)
-        (0.725, 0.430, -0.350), # Top Left
-        (0.060, -0.640, -0.350), # Bottom Right
+        (0.725, 0.430, -0.360), # Top Left
+        (0.060, -0.640, -0.360), # Bottom Right
     )
     COORDS_PAN = ( # X (Forwards/Backwards), Y (Left/Right), Z (Up/Down)
         (0.910, 0.600, -0.350), # Top Left

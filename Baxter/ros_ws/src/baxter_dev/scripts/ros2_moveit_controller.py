@@ -615,8 +615,12 @@ class Controller():
         # get message data
         targets = MSG_EndpointTargets(msg)
         print(f'Received Data: {repr(targets)}')
-        def set_l(): self.target_l = targets.target_l
-        def set_r(): self.target_r = targets.target_r
+        def set_l(): 
+            if targets.target_l is not None:
+                self.target_l = targets.target_l
+        def set_r(): 
+            if targets.target_r is not None:
+                self.target_r = targets.target_r
         threads: List[threading.Thread] = [
             threading.Thread(target=set_l),
             threading.Thread(target=set_r),
