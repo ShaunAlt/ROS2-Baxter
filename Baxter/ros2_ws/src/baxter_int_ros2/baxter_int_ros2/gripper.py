@@ -384,6 +384,7 @@ class Gripper(ROS2_Node):
                 block_test,
                 self,
                 timeout,
+                raise_err = False,
                 timeout_msg = f'{self} Command Block Timeout',
                 during_func = lambda: self._pub_cmd.publish(_cmd.create_msg())
             )

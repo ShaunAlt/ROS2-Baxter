@@ -69,8 +69,10 @@ create_aliases() {
         "alias ros2_ws='cd_ros2 && src_ws2'"
         "alias run_all='cd ${DIR} && ./baxter_commands.py -a'"
         "alias run_bridge='cd ${DIR} && ./baxter_commands.py -b'"
+        "alias run_image='cd ${DIR} && ./baxter_commands.py -i'"
         "alias run_moveit='cd ${DIR} && ./baxter_commands.py -m'"
         "alias run_srdf='cd ${DIR} && ./baxter_commands.py -s'"
+        "alias run_sweeper='cd ${DIR} && ./baxter_commands.py -w'"
         "alias run_tuck='cd ${DIR} && ./baxter_commands.py -t'"
         "alias run_untuck='cd ${DIR} && ./baxter_commands.py -u'"
     )

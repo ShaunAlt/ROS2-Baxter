@@ -328,16 +328,14 @@ class Robot():
             print('|\t| - Done')
 
             # calibrate grippers
-            with suppress(): self.grip_l.configure()
-            with suppress(): self.grip_l.calibrate()
-            with suppress(): self.grip_r.configure()
-            with suppress(): self.grip_r.calibrate()
+            print('| - Calibrating Grippers')
+            self.gripper_calibrate()
+            print('|\t| - Done')
 
             # detach implements
             self.gripper_attach(False)
 
             # move to camera position
-            #! NEED TO INITIALIZE GRIPPER
             print('| - Moving to Camera Position')
             with suppress(): self.move_camera(20)
             print('|\t| - Done - Waiting for Left Cuff Circle Press.')
@@ -348,7 +346,7 @@ class Robot():
 
             # getting occupancy grid
             print('| - Getting Occupancy Grid')
-            with suppress(): occ_bool, occ_uint8 = self.img_r.get_occ(10)
+            with suppress(): occ_bool, _ = self.img_r.get_occ(10)
             print(
                 '|\t| - Occupancy Grid BOOL: ' \
                 + self.img_r.display_occupancy_grid(bool).replace(
@@ -518,20 +516,6 @@ class Robot():
 
         return (
             ( # Brush
-                # (
-                #     Robot.COORDS_BRUSH[1][0] \
-                #     + (
-                #         (point[1] / size[1]) \
-                #         * (Robot.COORDS_BRUSH[0][0] - Robot.COORDS_BRUSH[1][0])
-                #     )
-                # ), # X (F/B)
-                # (
-                #     Robot.COORDS_BRUSH[1][1] \
-                #     + (
-                #         (point[0] / size[0]) \
-                #         * (Robot.COORDS_BRUSH[0][1] - Robot.COORDS_BRUSH[1][1])
-                #     )
-                # ), # Y (L/R)
                 (
                     Robot.COORDS_BRUSH[0][0] \
                     - (
@@ -625,40 +609,35 @@ class Robot():
 
         # move to gripper position
         print('| - Moving Limbs to Attach/Detach Position')
-        self.move_attach(20)
+        with suppress(): self.move_attach(20)
         print('|\t| - Done')
 
-        # open grippers
-        print('| - Opening Left Gripper on Circle Cuff Press')
-        df_wait(
-            lambda: self.dig_l_cuff_circle.state,
-            self.dig_l_cuff_circle
-        )
-        print('|\t| - Opening Left Gripper')
-        with suppress(): self.grip_l.set_pos(Robot.GRIPPER_OPEN)
-        print('| - Opening Right Gripper on Circle Cuff Press')
-        df_wait(
-            lambda: self.dig_r_cuff_circle.state,
-            self.dig_r_cuff_circle
-        )
-        print('|\t| - Opening Right Gripper')
-        with suppress(): self.grip_r.set_pos(Robot.GRIPPER_OPEN)
+        btn_txts, btn_l, btn_r, pos = {
+            True: (
+                ('Closing', 'Dash'),
+                self.dig_l_cuff_line,
+                self.dig_r_cuff_line,
+                Robot.GRIPPER_CLOSED,
+            ),
+            False: (
+                ('Opening', 'Circle'),
+                self.dig_l_cuff_circle,
+                self.dig_r_cuff_circle,
+                Robot.GRIPPER_OPEN,
+            )
+        }[attach]
 
-        # attach
-        if attach:
-            print('| - Closing Left Gripper on Dash Cuff Press')
-            df_wait(
-                lambda: self.dig_l_cuff_line.state,
-                self.dig_l_cuff_line
+        for side_txt, btn, grip in ([
+                ('Left', btn_l, self.grip_l),
+                ('Right', btn_r, self.grip_r),
+        ]):
+            print(
+                f'| - {btn_txts[0]} {side_txt} Gripper on {btn_txts[1]} ' \
+                + 'Cuff Press'
             )
-            print('|\t| - Closing Left Gripper')
-            with suppress(): self.grip_l.set_pos(Robot.GRIPPER_CLOSED)
-            print('| - Closing Right Gripper on Dash Cuff Press')
-            df_wait(
-                lambda: self.dig_r_cuff_line.state,
-                self.dig_r_cuff_line
-            )
-            with suppress(): self.grip_r.set_pos(Robot.GRIPPER_CLOSED)
+            df_wait(lambda: btn.state, btn)
+            print(f'|\t| - {btn_txts[0]} {side_txt} Gripper')
+            with suppress(): grip.set_pos(pos)
 
         print('| - Finishing on Left Cuff Circle Press')
         df_wait(
@@ -666,6 +645,15 @@ class Robot():
             self.dig_l_cuff_circle
         )
         print('|\t| - Done')
+
+    # ==================
+    # Calibrate Grippers
+    def gripper_calibrate(self) -> None:
+        ''' Calibrate Grippers. '''
+        with suppress(): self.grip_l.configure()
+        with suppress(): self.grip_l.calibrate()
+        with suppress(): self.grip_r.configure()
+        with suppress(): self.grip_r.calibrate()
 
     # ====================================
     # Move Limbs to Attach/Detach Position

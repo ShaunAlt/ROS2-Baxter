@@ -63,17 +63,16 @@ def tab(window: bool = False) -> None:
 def bridge():
     ''' Creates and runs the Baxter Bridge. '''
     print(
-        '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
-        + '|       Creating Baxter Bridge       |\n' \
-        + '|------------------------------------|\n' \
-        + '| 1. Creates a new terminal tab.     |\n' \
-        + '| 2. Runs `baxter_init`.             |\n' \
-        + '| 3. Waits 2 seconds for the script  |\n' \
-        + '|    to finish.                      |\n' \
-        + '| 4. Runs `baxter_bridge`.           |\n' \
-        + '|------------------------------------|\n' \
-        + '|     Press `ENTER` Key to Start     |\n' \
-        + '|____________________________________|\n'
+        '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
+        + '|            Creating Baxter Bridge            |\n' \
+        + '|----------------------------------------------|\n' \
+        + '| 1. Creates a new terminal tab.               |\n' \
+        + '| 2. Runs `baxter_init`.                       |\n' \
+        + '| 3. Waits 2 seconds for the script to finish. |\n' \
+        + '| 4. Runs `baxter_bridge`.                     |\n' \
+        + '|----------------------------------------------|\n' \
+        + '|          Press `ENTER` Key to Start          |\n' \
+        + '|______________________________________________|\n'
     )
     input()
     tab()
@@ -87,25 +86,21 @@ def bridge():
 def create_srdf():
     ''' Creates the Baxter SRDF. '''
     print(
-        '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
-        + '|        Create the Baxter SRDF         |\n' \
-        + '| NOTE: THIS ONLY NEEDS TO BE RUN ONCE. |\n' \
-        + '|---------------------------------------|\n' \
-        + '| 1. Creates a new terminal tab.        |\n' \
-        + '| 1. Runs `moveit_ws`.                  |\n' \
-        + '| 2. Goes to the `baxter_moveit_config` |\n' \
-        + '|    directory.                         |\n' \
-        + '| 3. Create a temporary file.           |\n' \
-        + '| 4. Uses `xacro` to create the SRDF as |\n' \
-        + '|    a temporary file.                  |\n' \
-        + '| 5. Saves the temporary file as        |\n' \
-        + '|    `baxter.srdf`.                     |\n' \
-        + '| 6. Edits the modification rights of   |\n' \
-        + '|    `baxter.srdf` to allow read/write  |\n' \
-        + '|    access.                            |\n' \
-        + '|---------------------------------------|\n' \
-        + '|      Press `ENTER` Key to Start       |\n' \
-        + '|_______________________________________|\n'
+        '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
+        + '|                   Create the Baxter SRDF                   |\n' \
+        + '|           NOTE: THIS ONLY NEEDS TO BE RUN ONCE.            |\n' \
+        + '|------------------------------------------------------------|\n' \
+        + '| 1. Creates a new terminal tab.                             |\n' \
+        + '| 1. Runs `moveit_ws`.                                       |\n' \
+        + '| 2. Goes to the `baxter_moveit_config` directory.           |\n' \
+        + '| 3. Create a temporary file.                                |\n' \
+        + '| 4. Uses `xacro` to create the SRDF as a temporary file.    |\n' \
+        + '| 5. Saves the temporary file as `baxter.srdf`.              |\n' \
+        + '| 6. Edits the modification rights of `baxter.srdf` to allow |\n' \
+        + '|    read/write access.                                      |\n' \
+        + '|------------------------------------------------------------|\n' \
+        + '|                 Press `ENTER` Key to Start                 |\n' \
+        + '|____________________________________________________________|\n'
     )
     input()
     sudo_pwd = input('Enter the Password for the SUDO User:')
@@ -124,63 +119,98 @@ def create_srdf():
     cmd('sudo chmod a=wr config/baxter.srdf')
     return
 
+# ======================
+# Create Image Streamers
+def image():
+    ''' Create Image Streamers. '''
+    print(
+        '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
+        + '|                  Create Image Streamers                   |\n' \
+        + '|-----------------------------------------------------------|\n' \
+        + '| 1. Completes the following steps for each of the image    |\n' \
+        + '|    streamer topics:                                       |\n' \
+        + '|    - "right_hand_camera/image_data"                       |\n' \
+        + '|        - The raw camera data from Baxters right hand      |\n' \
+        + '|          camera.                                          |\n' \
+        + '|    - "right_hand_camera/processed_table"                  |\n' \
+        + '|        - Once the sweeper has identified the workspace    |\n' \
+        + '|          table, this will show a warped image of just the |\n' \
+        + '|          table and its contents.                          |\n' \
+        + '|    - "right_hand_camera/processed_table/occupancy/bool"   |\n' \
+        + '|        - Shows the boolean occupancy grid created by the  |\n' \
+        + '|          sweeper.                                         |\n' \
+        + '| 2. Creates a new terminal tab.                            |\n' \
+        + '| 3. Runs `ros2_ws`.                                        |\n' \
+        + '| 4. Creates the image streamer for that topic.             |\n' \
+        + '|-----------------------------------------------------------|\n' \
+        + '|                Press `ENTER` Key to Start                 |\n' \
+        + '|___________________________________________________________|\n'
+    )
+    input()
+    # go through all of the image streamers to create
+    for topic in [
+            'right_hand_camera/image_data',
+            'right_hand_camera/processed_table',
+            'right_hand_camera/processed_table/occupancy/bool',
+    ]:
+        tab()
+        cmd('ros2_ws')
+        cmd(f'ros2 run baxter_dev streamer {topic}')
+    return
+
 # =============
 # ROS1 - MoveIT
 def ros1_moveit():
     ''' Creates the ROS1 MoveIT Nodes. '''
     print(
-        '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
-        + '|     Creating ROS1 MoveIT Nodes      |\n' \
-        + '|-------------------------------------|\n' \
-        + '|  1. Creates a new terminal tab.     |\n' \
-        + '|  2. Runs `baxter_init`.             |\n' \
-        + '|  3. Waits 2 seconds for the script  |\n' \
-        + '|     to finish.                      |\n' \
-        + '|  4. Runs `ros_ws`.                  |\n' \
-        + '|  5. Runs `moveit_ws`.               |\n' \
-        + '|  6. Runs `cd_ros1`.                 |\n' \
-        + '|  7. Updates Environment Variables.  |\n' \
-        + '|     - CMAKE_PREFIX_PATH             |\n' \
-        + '|     - LD_LIBRARY_PATH               |\n' \
-        + '|     - PKG_CONFIG_PATH               |\n' \
-        + '|     - PYTHONPATH                    |\n' \
-        + '|     - ROS_PACKAGE_PATH              |\n' \
-        + '|     - ROSLISP_PACKAGE_DIRECTORIES   |\n' \
-        + '|  8. Sets the Robot Semantic         |\n' \
-        + '|     Description (SRDF) File         |\n' \
-        + '|     Parameter.                      |\n' \
-        + '|  9. Launches the `move_group` and   |\n' \
-        + '|     `controller` moveit files.      |\n' \
-        + '| 10. Once the `move_group` file has  |\n' \
-        + '|     launched, press `ENTER` after   |\n' \
-        + '|     green text appears stating      |\n' \
-        + '|     "You can start planning now!".  |\n' \
-        + '| 11. Once the line "MoveIT           |\n' \
-        + '|     Controller Ready" is printed,   |\n' \
-        + '|     you can start sending it data.  |\n' \
-        + '|-------------------------------------|\n' \
-        + '|     Press `ENTER` Key to Start      |\n' \
-        + '|_____________________________________|\n' \
-        + '\n' \
-        + 'NOTE:\n' \
-        + '| - If any of the following errors occur, stop the launch\n' \
-            + '|\tscript (CTRL+C) and re-run it (it will be the most\n' \
-            + '|\trecent command run in the active terminal):\n' \
-            + '|\t| - "group \'left_arm\' is not found".\n' \
-            + '|\t| - "group \'right_arm\' is not found".\n' \
-            + '|\t| - "could not connect to "move_group" action server.\n' \
-        + '| - If any of the following errors occur, stop the launch\n' \
-            + '|\tscript (CTRL+C), and run the command `roslaunch\n' \
-            + '|\tbaxter_moveit_config demo_baxter.launch`. Once the text\n' \
-            + '|\t"You can start planning now!" appears, quit that launch\n' \
-            + '|\tand re-run the previous command.\n' \
-            + '|\t| - "robot semantic description not found".\n' \
-        + '| - Ignore any of the following errors:\n' \
-            + '|\t| - "action client not connected".\n' \
-        + '| - For all other errors, or continuously appearing errors that\n' \
-            + '|\trequire restarts, restart the entire terminal and retry.\n' \
-            + '|\tIf that doesn\'t work, restart the Baxter robot and/or\n' \
-            + '|\tthe computer and the issue should be resolved.\n'
+        '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
+        + '|                 Creating ROS1 MoveIT Nodes                 |\n' \
+        + '|------------------------------------------------------------|\n' \
+        + '|  1. Creates a new terminal tab.                            |\n' \
+        + '|  2. Runs `baxter_init`.                                    |\n' \
+        + '|  3. Waits 2 seconds for the script to finish.              |\n' \
+        + '|  4. Runs `ros_ws`.                                         |\n' \
+        + '|  5. Runs `moveit_ws`.                                      |\n' \
+        + '|  6. Runs `cd_ros1`.                                        |\n' \
+        + '|  7. Updates Environment Variables.                         |\n' \
+        + '|     - CMAKE_PREFIX_PATH                                    |\n' \
+        + '|     - LD_LIBRARY_PATH                                      |\n' \
+        + '|     - PKG_CONFIG_PATH                                      |\n' \
+        + '|     - PYTHONPATH                                           |\n' \
+        + '|     - ROS_PACKAGE_PATH                                     |\n' \
+        + '|     - ROSLISP_PACKAGE_DIRECTORIES                          |\n' \
+        + '|  8. Sets the Robot Semantic Description (SRDF) File        |\n' \
+        + '|     Parameter.                                             |\n' \
+        + '|  9. Launches the `move_group` and `controller` moveit      |\n' \
+        + '|     files.                                                 |\n' \
+        + '| 10. Once the `move_group` file has launched, press `ENTER` |\n' \
+        + '|     after green text appears stating "You can start        |\n' \
+        +' |     planning now!".                                        |\n' \
+        + '| 11. Once the line "MoveIT Controller Ready" is printed,    |\n' \
+        + '|     you can start sending it data.                         |\n' \
+        + '|------------------------------------------------------------|\n' \
+        + '|                 Press `ENTER` Key to Start                 |\n' \
+        + '|------------------------------------------------------------|\n' \
+        + '| NOTE:                                                      |\n' \
+        + '| - If any of the following errors occur, stop the launch    |\n' \
+        + '|   script (CTRL+C) and re-run it (it will be the most       |\n' \
+        + '|   recent command run in the active terminal):              |\n' \
+        + '|   - "group \'left_arm\' is not found".                       |\n' \
+        + '|   - "group \'right_arm\' is not found".                      |\n' \
+        + '|   - "could not connect to "move_group" action server.      |\n' \
+        + '| - If any of the following errors occur, stop the launch    |\n' \
+        + '|   script (CTRL+C), and run the command `roslaunch          |\n' \
+        + '|   baxter_moveit_config demo_baxter.launch`. Once the text  |\n' \
+        + '|   "You can start planning now!" appears, quit that launch  |\n' \
+        + '|   and re-run the previous command.                         |\n' \
+        + '|   - "robot semantic description not found".                |\n' \
+        + '| - Ignore any of the following errors:                      |\n' \
+        + '|   - "action client not connected".                         |\n' \
+        + '| - For all other errors, or continuously appearing errors   |\n' \
+        + '|   that require restarts, restart the entire terminal and   |\n' \
+        + '|   retry. If that doesn\'t work, restart the Baxter robot    |\n' \
+        + '|   and/or the computer and the issue should be resolved.    |\n'
+        + '|____________________________________________________________|\n'
     )
     input()
     tab()
@@ -217,19 +247,19 @@ def ros1_tuck(tuck):
     ''' Tucks (`True`) or Untucks (`False`) Baxters Arms. '''
     a, b, c = {True: ('t', 'Tuck', 1), False: ('u', 'Untuck', 0)}[tuck]
     print(
-        '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
-        + f'|      {" "*c} Baxter Arms -  {b} {" "*c}       |\n' \
-        + '|------------------------------------|\n' \
-        + '| 1. Creates a new terminal tab.     |\n' \
-        + '| 2. Runs `baxter_init`.             |\n' \
-        + '| 3. Waits 2 seconds for the script  |\n' \
-        + '|    to finish.                      |\n' \
-        + '| 4. Runs the `tuck_arms.py` script  |\n' \
-        + f'|    with the -{a} parameter to        |\n' \
-        + f'|    {b.lower()} Baxter\'s Arms.           {" "*c*2}|\n' \
-        + '|------------------------------------|\n' \
-        + '|     Press `ENTER` Key to Start     |\n' \
-        + '|____________________________________|\n' 
+        '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
+        + f'|               {" "*c} Baxter Arms -  {b} {" "*c}              ' \
+        + '  |\n' \
+        + '|----------------------------------------------------------|\n' \
+        + '| 1. Creates a new terminal tab.                           |\n' \
+        + '| 2. Runs `baxter_init`.                                   |\n' \
+        + '| 3. Waits 2 seconds for the script to finish.             |\n' \
+        + f'| 4. Runs the `tuck_arms.py` script with the -{a} parameter |\n' \
+        + f'|    to {b.lower()} Baxter\'s Arms. {" "*c*2}                  ' \
+        + '            |\n' \
+        + '|----------------------------------------------------------|\n' \
+        + '|                Press `ENTER` Key to Start                |\n' \
+        + '|__________________________________________________________|\n' 
     )
     input()
     tab()
@@ -237,6 +267,26 @@ def ros1_tuck(tuck):
     time.sleep(2)
     cmd(f'rosrun baxter_tools tuck_arms.py -{a}')
     return
+
+# ===========
+# Run Sweeper
+def sweeper():
+    ''' Runs the ROS2 Sweeper. '''
+    print(
+        '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
+        + '|          Run Sweeper           |\n' \
+        + '|--------------------------------|\n' \
+        + '| 1. Creates a new terminal tab. |\n' \
+        + '| 2. Runs `ros2_ws`.             |\n' \
+        + '| 3. Runs the sweeper script.    |\n' \
+        + '|--------------------------------|\n' \
+        + '|   Press `ENTER` Key to Start   |\n' \
+        + '|________________________________|\n'
+    )
+    input()
+    tab()
+    cmd('ros2_ws')
+    cmd('ros2 run baxter_dev sweeper')
 
 
 # =============================================================================
@@ -256,6 +306,12 @@ def main() -> None:
         '--bridge', 
         action = 'store_true',
         help = 'Creates the Baxter Bridge.'
+    )
+    parser.add_argument(
+        '-i',
+        '--image',
+        action = 'store_true',
+        help = 'Create Image Streamers for Viewing Camera Data.'
     )
     parser.add_argument(
         '-m', 
@@ -281,6 +337,12 @@ def main() -> None:
         action = 'store_true',
         help = 'Untucks the arms of the Baxter robot.'
     )
+    parser.add_argument(
+        '-w',
+        '--sweeper',
+        action = 'store_true',
+        help = 'Run the Baxter Sweeper Script.'
+    )
     args = parser.parse_args()
 
     if args.srdf: create_srdf()
@@ -288,6 +350,8 @@ def main() -> None:
     if args.untuck or args.all: ros1_tuck(False)
     if args.bridge or args.all: bridge()
     if args.moveit or args.all: ros1_moveit()
+    if args.sweeper or args.all: sweeper()
+    if args.image or args.all: image()
 
 if __name__ == '__main__':
     main()
