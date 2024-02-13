@@ -178,6 +178,7 @@ class Robot():
     # ===========
     # Constructor
     def __init__(self) -> None:
+        self.running_main = False
         # create cameras
         self.cam_l = Camera(Topics.Camera.LEFT)
         self.cam_r = Camera(Topics.Camera.RIGHT)
@@ -291,7 +292,9 @@ class Robot():
                 )
             )
         ]
-        for _t in t: _t.start()
+        for _t in t: 
+            _t.start()
+            time.sleep(0.1)
         for _t in t: _t.join()
 
     # =======================================
@@ -312,19 +315,27 @@ class Robot():
     # State-Change Callback - Left Shoulder
     def _state_change_l_shoulder(self, val: bool) -> None:
         ''' State-Change Callback - Left Shoulder Button. '''
+        if self.running_main: return
         if val: 
+            self.running_main = True
             print('Running Main Program')
 
             # move to init
             print('| - Moving Limbs to Initialize Position')
-            self.move_init(10)
+            try:
+                self.move_init(20)
+            except:
+                pass
             print('|\t| - Done')
 
             # calibrate grippers
-            self.grip_l.configure()
-            self.grip_r.configure()
-            self.grip_l.calibrate()
-            self.grip_r.calibrate()
+            try:
+                self.grip_l.configure()
+                self.grip_r.configure()
+                self.grip_l.calibrate()
+                self.grip_r.calibrate()
+            except:
+                pass
 
             # detach implements
             self.gripper_attach(False)
@@ -332,14 +343,17 @@ class Robot():
             # move to camera position
             #! NEED TO INITIALIZE GRIPPER
             print('| - Moving to Camera Position')
-            self.move_camera(10)
-            print('|\t| - Done')
-            # time.sleep(10)
-            # print('|\t| - Done Waiting 10s')
+            try:
+                self.move_camera(20)
+            except:
+                pass
+            print('|\t| - Done (Waiting 10s)')
+            time.sleep(10)
+            print('|\t| - Done Waiting 10s')
 
             # getting occupancy grid
             print('| - Getting Occupancy Grid')
-            occ_bool, occ_uint8 = self.img_r.get_occ(5)
+            occ_bool, occ_uint8 = self.img_r.get_occ(10)
             print(
                 '|\t| - Occupancy Grid BOOL: ' \
                 + self.img_r.display_occupancy_grid(bool).replace(
@@ -356,15 +370,15 @@ class Robot():
                 print('|\t| - No cleaning required')
                 print('| - Done')
                 return
+            print(f'|\t| - Point to Clean: {clean_point}')
             pos_brush_org, pos_pan_org = Robot.get_pixel_pos(
                 clean_point, 
-                (occ_bool.size[1], occ_bool.size[0])
+                (occ_bool.shape[1], occ_bool.shape[0])
             )
             pos_brush_new, pos_pan_new = (
                 (pos_brush_org[0], pos_brush_org[1]-0.2, pos_brush_org[2]),
                 (pos_pan_org[0], pos_pan_org[1]-0.2, pos_pan_org[2]),
             )
-            print(f'|\t| - Point to Clean: {clean_point}')
             print(f'|\t| - Brush Point: {pos_brush_org} -> {pos_brush_new}')
             print(f'|\t| - Pan Point: {pos_pan_org} -> {pos_pan_new}')
             occ_bool[clean_point[1]][clean_point[0]] = 2
@@ -381,33 +395,40 @@ class Robot():
 
             # move to positions
             print('| - Moving to Sweep Starting Positions')
-            self._move_limbs(
-                target_l = MSG_Pose.from_coords(
-                    pos_pan_new,
-                    (math.sqrt(2), math.sqrt(2), 0.0, 0.0)
-                ),
-                target_r = MSG_Pose.from_coords(
-                    pos_brush_new,
-                    (0.0, 1.0, 0.0, 0.0)
-                ),
-                skip_l = True,
-                skip_r = True,
-                timeout_l = 10,
-                timeout_r = 10
-            )
+            try:
+                self._move_limbs(
+                    target_l = MSG_Pose.from_coords(
+                        pos_pan_new,
+                        (math.sqrt(2), math.sqrt(2), 0.0, 0.0)
+                    ),
+                    target_r = MSG_Pose.from_coords(
+                        pos_brush_new,
+                        (0.0, 1.0, 0.0, 0.0)
+                    ),
+                    skip_l = True,
+                    skip_r = True,
+                    timeout_l = 20,
+                    timeout_r = 20
+                )
+            except:
+                pass
             print('|\t| - Done')
 
             # sweep
             print('| - Sweeping')
-            self.limb_r.set_endpoint(
-                pose = MSG_Pose.from_coords(
-                    (pos_brush_new[0], pos_brush_new[1]+0.4, pos_brush_new[2]),
-                    (0.0, 1.0, 0.0, 0.0)
-                ),
-                cartesian = True,
-                timeout = 10
-            )
+            try:
+                self.limb_r.set_endpoint(
+                    pose = MSG_Pose.from_coords(
+                        (pos_brush_new[0], pos_brush_new[1]+0.4, pos_brush_new[2]),
+                        (0.0, 1.0, 0.0, 0.0)
+                    ),
+                    cartesian = True,
+                    timeout = 10
+                )
+            except:
+                pass
             print('|\t| - Finished Sweeping')
+            self.running_main = False
 
     # =====================================
     # State-Change Callback - Left Torso OK
@@ -567,8 +588,8 @@ class Robot():
         def _calculate_distance(x1, y1, x2, y2) -> float:
             return ((x1-x2)**2) + ((y1-y2)**2)
 
-        num_rows: int = grid.size[0]
-        num_cols: int = grid.size[1]
+        num_rows: int = grid.shape[0]
+        num_cols: int = grid.shape[1]
         closest_pixel: Optional[_POINT_2D] = None
         for y, row in enumerate(grid):
             for x, cell in enumerate(row):
@@ -599,7 +620,7 @@ class Robot():
 
         # move to gripper position
         print('| - Moving Limbs to Attach/Detach Position')
-        self.move_attach(10)
+        self.move_attach(20)
         print('|\t| - Done')
 
         # open grippers
