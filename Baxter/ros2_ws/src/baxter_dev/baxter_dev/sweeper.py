@@ -395,6 +395,17 @@ class Robot():
             # attach gripper implements
             self.gripper_attach(True)
 
+            # move both arms out of the way
+            print('| - Moving Arms out of Collision Space')
+            self.limb_l.set_positions(s0 = 1.5)
+            self.limb_r.set_positions(s0 = -1.5)
+            print('|\t| - Starting next movement on Left Circle Cuff Press')
+            df_wait(
+                lambda: self.dig_l_cuff_circle.state,
+                self.dig_l_cuff_circle
+            )
+
+
             # move to positions
             print('| - Moving to Sweep Starting Positions')
             with suppress():
