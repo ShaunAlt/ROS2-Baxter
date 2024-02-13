@@ -91,12 +91,12 @@ def create_srdf():
         + '|           NOTE: THIS ONLY NEEDS TO BE RUN ONCE.            |\n' \
         + '|------------------------------------------------------------|\n' \
         + '| 1. Creates a new terminal tab.                             |\n' \
-        + '| 1. Runs `moveit_ws`.                                       |\n' \
-        + '| 2. Goes to the `baxter_moveit_config` directory.           |\n' \
-        + '| 3. Create a temporary file.                                |\n' \
-        + '| 4. Uses `xacro` to create the SRDF as a temporary file.    |\n' \
-        + '| 5. Saves the temporary file as `baxter.srdf`.              |\n' \
-        + '| 6. Edits the modification rights of `baxter.srdf` to allow |\n' \
+        + '| 2. Runs `moveit_ws`.                                       |\n' \
+        + '| 3. Goes to the `baxter_moveit_config` directory.           |\n' \
+        + '| 4. Create a temporary file.                                |\n' \
+        + '| 5. Uses `xacro` to create the SRDF as a temporary file.    |\n' \
+        + '| 6. Saves the temporary file as `baxter.srdf`.              |\n' \
+        + '| 7. Edits the modification rights of `baxter.srdf` to allow |\n' \
         + '|    read/write access.                                      |\n' \
         + '|------------------------------------------------------------|\n' \
         + '|                 Press `ENTER` Key to Start                 |\n' \
@@ -185,7 +185,7 @@ def ros1_moveit():
         + '|     files.                                                 |\n' \
         + '| 10. Once the `move_group` file has launched, press `ENTER` |\n' \
         + '|     after green text appears stating "You can start        |\n' \
-        +' |     planning now!".                                        |\n' \
+        + '|     planning now!".                                        |\n' \
         + '| 11. Once the line "MoveIT Controller Ready" is printed,    |\n' \
         + '|     you can start sending it data.                         |\n' \
         + '|------------------------------------------------------------|\n' \
@@ -248,15 +248,15 @@ def ros1_tuck(tuck):
     a, b, c = {True: ('t', 'Tuck', 1), False: ('u', 'Untuck', 0)}[tuck]
     print(
         '.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.\n' \
-        + f'|               {" "*c} Baxter Arms -  {b} {" "*c}              ' \
-        + '  |\n' \
+        + f'|                 {" "*c} Baxter Arms -  {b} {" "*c}            ' \
+        + '      |\n' \
         + '|----------------------------------------------------------|\n' \
         + '| 1. Creates a new terminal tab.                           |\n' \
         + '| 2. Runs `baxter_init`.                                   |\n' \
         + '| 3. Waits 2 seconds for the script to finish.             |\n' \
-        + f'| 4. Runs the `tuck_arms.py` script with the -{a} parameter |\n' \
+        + f'| 4. Runs the `tuck_arms.py` script with the -{a} parameter   |\n' \
         + f'|    to {b.lower()} Baxter\'s Arms. {" "*c*2}                  ' \
-        + '            |\n' \
+        + '           |\n' \
         + '|----------------------------------------------------------|\n' \
         + '|                Press `ENTER` Key to Start                |\n' \
         + '|__________________________________________________________|\n' 

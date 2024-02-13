@@ -233,6 +233,15 @@ class Robot():
             self._state_change_r_shoulder
         )
 
+        # create instructions
+        print(
+            'Instructions:\n' \
+            + '- To print the current positions of both limbs, press the OK' \
+                + ' button on the Left Limb.\n' \
+            + '- To run the main loop, press the button behind the left ' \
+                + 'shoulder, then follow the console instructions.'
+        )
+
         return None
 
     # ==========
