@@ -347,9 +347,14 @@ class Robot():
                 self.move_camera(20)
             except:
                 pass
-            print('|\t| - Done (Waiting 10s)')
-            time.sleep(10)
-            print('|\t| - Done Waiting 10s')
+            print('|\t| - Done - Waiting for Left Cuff Circle Press.')
+            df_wait(
+                lambda: self.dig_l_cuff_circle.state,
+                self.dig_l_cuff_circle
+            )
+            # print('|\t| - Done (Waiting 10s)')
+            # time.sleep(10)
+            # print('|\t| - Done Waiting 10s')
 
             # getting occupancy grid
             print('| - Getting Occupancy Grid')
