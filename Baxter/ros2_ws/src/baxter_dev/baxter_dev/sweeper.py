@@ -320,10 +320,17 @@ class Robot():
             self.move_init(10)
             print('|\t| - Done')
 
+            # calibrate grippers
+            self.grip_l.configure()
+            self.grip_r.configure()
+            self.grip_l.calibrate()
+            self.grip_r.calibrate()
+
             # detach implements
             self.gripper_attach(False)
 
             # move to camera position
+            #! NEED TO INITIALIZE GRIPPER
             print('| - Moving to Camera Position')
             self.move_camera()
             print('|\t| - Done')
