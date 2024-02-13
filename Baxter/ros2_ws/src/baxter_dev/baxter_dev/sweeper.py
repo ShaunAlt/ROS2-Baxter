@@ -277,30 +277,34 @@ class Robot():
     ) -> None:
         ''' Move Limbs to Specific Positions. '''
 
-        t = [
-            Thread(
-                target=self.limb_l.set_endpoint, 
-                args=(
-                    target_l, 
-                    cartesian_l,
-                    skip_l,
-                    timeout_l,
+        while (
+                (not self.limb_l.data_endpoint.pose.check_close(target_l))
+                or (not self.limb_r.data_endpoint.pose.check_close(target_r))
+        ):
+            t = [
+                Thread(
+                    target=self.limb_l.set_endpoint, 
+                    args=(
+                        target_l, 
+                        cartesian_l,
+                        skip_l,
+                        timeout_l,
+                    )
+                ),
+                Thread(
+                    target=self.limb_r.set_endpoint,
+                    args=(
+                        target_r,
+                        cartesian_r,
+                        skip_r,
+                        timeout_r
+                    )
                 )
-            ),
-            Thread(
-                target=self.limb_r.set_endpoint,
-                args=(
-                    target_r,
-                    cartesian_r,
-                    skip_r,
-                    timeout_r
-                )
-            )
-        ]
-        for _t in t: 
-            _t.start()
-            time.sleep(0.1)
-        for _t in t: _t.join()
+            ]
+            for _t in t: 
+                _t.start()
+                time.sleep(0.1)
+            for _t in t: _t.join()
 
     # =======================================
     # State-Change Callback - Left Forearm OK
@@ -336,7 +340,7 @@ class Robot():
             print('|\t| - Done')
 
             # detach implements
-            self.gripper_attach(False)
+            # self.gripper_attach(False)
 
             # move to camera position
             print('| - Moving to Camera Position')
@@ -391,14 +395,6 @@ class Robot():
 
             # move both arms out of the way
             print('| - Moving Arms out of Collision Space')
-            # self.limb_l.set_positions(s0 = 1.5)
-            # self.limb_r.set_positions(s0 = -1.5)
-            # time.sleep(3)
-            # print('|\t| - Starting next movement on Left Circle Cuff Press')
-            # df_wait(
-            #     lambda: self.dig_l_cuff_circle.state,
-            #     self.dig_l_cuff_circle
-            # )
             self._move_limbs(
                 POSES.SPACE.L,
                 POSES.SPACE.R,
@@ -633,7 +629,7 @@ class Robot():
 
         # move to gripper position
         print('| - Moving Limbs to Attach/Detach Position')
-        with suppress(): self.move_attach(20)
+        with suppress(): self.move_init(20)
         print('|\t| - Done')
 
         btn_txts, btn_l, btn_r, pos = {
