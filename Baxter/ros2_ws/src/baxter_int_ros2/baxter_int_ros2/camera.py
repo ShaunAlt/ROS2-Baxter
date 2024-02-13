@@ -1447,6 +1447,48 @@ class Image_Processor_V2(ROS2_Node):
         # self.log(f'Table Data Sub - Process Table {self._table_process}')
         if self._table_process: self.table_process()
 
+    # ======================
+    # Display Occupancy Grid
+    def display_occupancy_grid(self, _type: Any) -> str:
+        '''
+        Display Occupancy Grid
+        -
+        Outputs a string containing a prettified representation of the required
+        occupancy grid.
+
+        Parameters
+        -
+        - _type : `Any`
+            - Type of grid to be displayed.
+            - Valid Options:
+                - `Type[int]` : UINT8 Occupancy Grid.
+                - `Type[bool]` : BOOL Occupancy Grid.
+
+        Returns
+        -
+        `str`
+            - Prettified string representation of grid.
+        '''
+
+        if _type not in [int, bool]:
+            raise ValueError(
+                'Run Image_Processor_V2.display_grid with invalid _type=' \
+                + f'{repr(_type)}'
+            )
+        
+        grid = {int: self.data_occ_uint8, bool: self.data_occ_bool}[_type]
+        output: str = '[\n'
+        for row in grid:
+            output += '\t['
+            if _type is int:
+                output += ', '.join([f'{cell:03}' for cell in row])
+            elif _type is bool:
+                output += ', '.join([f'{cell:01}' for cell in row])
+            output += '],\n'
+        output += ']'
+
+        return output
+
     # ===================
     # Get Occupancy Grids
     def get_occ(

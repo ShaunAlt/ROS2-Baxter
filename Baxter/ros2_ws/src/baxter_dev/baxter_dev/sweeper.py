@@ -33,6 +33,9 @@ import math
 # used for multi-threading
 from threading import Thread
 
+# used for time sleeps
+import time
+
 # used for ros2 python connection
 import rclpy # type: ignore
 from rclpy.node import Node # type: ignore
@@ -42,6 +45,7 @@ if TYPE_CHECKING:
     from baxter_int_ros2.baxter_int_ros2 import (
         _TIMER,
         Camera,
+        df_wait,
         DigitalIO,
         Gripper,
         Image_Processor,
@@ -56,6 +60,7 @@ else:
     from baxter_int_ros2 import (
         _TIMER,
         Camera,
+        df_wait,
         DigitalIO,
         Gripper,
         Image_Processor,
@@ -312,7 +317,7 @@ class Robot():
 
             # move to init
             print('| - Moving Limbs to Initialize Position')
-            self.move_init(5)
+            self.move_init(10)
             print('|\t| - Done')
 
             # detach implements
@@ -322,16 +327,18 @@ class Robot():
             print('| - Moving to Camera Position')
             self.move_camera()
             print('|\t| - Done')
+            time.sleep(10)
+            print('|\t| - Done Waiting 10s')
 
             # getting occupancy grid
             print('| - Getting Occupancy Grid')
             occ_bool, occ_uint8 = self.img_r.get_occ(5)
             print(
                 '|\t| - Occupancy Grid BOOL: ' \
-                + self.display_occupancy(
-                    occ_bool, 
-                    bool
-                ).replace('\n', '\n|\t|\t')
+                + self.img_r.display_occupancy_grid(bool).replace(
+                    '\n',
+                    '\n|\t|\t'
+                )
             )
             print('|\t| - Done')
 
@@ -585,31 +592,51 @@ class Robot():
 
         # move to gripper position
         print('| - Moving Limbs to Attach/Detach Position')
-        self.move_attach(5)
+        self.move_attach(10)
         print('|\t| - Done')
 
         # open grippers
         print('| - Opening Left Gripper on Circle Cuff Press')
-        while not self.dig_l_cuff_circle.state: pass
+        # while not self.dig_l_cuff_circle.state: pass
+        df_wait(
+            lambda: self.dig_l_cuff_circle.state,
+            self.dig_l_cuff_circle
+        )
         print('|\t| - Opening Left Gripper')
         self.grip_l.set_pos(Robot.GRIPPER_OPEN)
         print('| - Opening Right Gripper on Circle Cuff Press')
-        while not self.dig_r_cuff_circle.state: pass
+        # while not self.dig_r_cuff_circle.state: pass
+        df_wait(
+            lambda: self.dig_r_cuff_circle.state,
+            self.dig_r_cuff_circle
+        )
         print('|\t| - Opening Right Gripper')
         self.grip_r.set_pos(Robot.GRIPPER_OPEN)
 
         # attach
         if attach:
             print('| - Closing Left Gripper on Dash Cuff Press')
-            while not self.dig_l_cuff_line.state: pass
+            # while not self.dig_l_cuff_line.state: pass
+            df_wait(
+                lambda: self.dig_l_cuff_line.state,
+                self.dig_l_cuff_line
+            )
             print('|\t| - Closing Left Gripper')
             self.grip_l.set_pos(Robot.GRIPPER_CLOSED)
             print('| - Closing Right Gripper on Dash Cuff Press')
-            while not self.dig_r_cuff_line.state: pass
+            # while not self.dig_r_cuff_line.state: pass
+            df_wait(
+                lambda: self.dig_r_cuff_line.state,
+                self.dig_r_cuff_line
+            )
             self.grip_r.set_pos(Robot.GRIPPER_CLOSED)
 
         print('| - Finishing on Left Cuff Circle Press')
-        while not self.dig_l_cuff_circle.state: pass
+        # while not self.dig_l_cuff_circle.state: pass
+        df_wait(
+            lambda: self.dig_l_cuff_circle.state,
+            self.dig_l_cuff_circle
+        )
         print('|\t| - Done')
 
     # ====================================
