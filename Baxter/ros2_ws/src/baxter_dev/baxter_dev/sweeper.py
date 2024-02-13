@@ -532,16 +532,30 @@ class Robot():
 
         return (
             ( # Brush
+                # (
+                #     Robot.COORDS_BRUSH[1][0] \
+                #     + (
+                #         (point[1] / size[1]) \
+                #         * (Robot.COORDS_BRUSH[0][0] - Robot.COORDS_BRUSH[1][0])
+                #     )
+                # ), # X (F/B)
+                # (
+                #     Robot.COORDS_BRUSH[1][1] \
+                #     + (
+                #         (point[0] / size[0]) \
+                #         * (Robot.COORDS_BRUSH[0][1] - Robot.COORDS_BRUSH[1][1])
+                #     )
+                # ), # Y (L/R)
                 (
-                    Robot.COORDS_BRUSH[1][0] \
-                    + (
+                    Robot.COORDS_BRUSH[0][0] \
+                    - (
                         (point[1] / size[1]) \
                         * (Robot.COORDS_BRUSH[0][0] - Robot.COORDS_BRUSH[1][0])
                     )
                 ), # X (F/B)
                 (
-                    Robot.COORDS_BRUSH[1][1] \
-                    + (
+                    Robot.COORDS_BRUSH[0][1] \
+                    - (
                         (point[0] / size[0]) \
                         * (Robot.COORDS_BRUSH[0][1] - Robot.COORDS_BRUSH[1][1])
                     )
@@ -550,15 +564,15 @@ class Robot():
             ),
             ( # Dustpan
                 (
-                    Robot.COORDS_PAN[1][0] \
-                    + (
+                    Robot.COORDS_PAN[0][0] \
+                    - (
                         (point[1] / size[1]) \
                         * (Robot.COORDS_PAN[0][0] - Robot.COORDS_PAN[1][0])
                     )
                 ), # X (F/B)
                 (
-                    Robot.COORDS_PAN[1][1] \
-                    + (
+                    Robot.COORDS_PAN[0][1] \
+                    - (
                         (point[0] / size[0]) \
                         * (Robot.COORDS_PAN[0][1] - Robot.COORDS_PAN[1][1])
                     )
