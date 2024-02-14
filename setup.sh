@@ -28,6 +28,12 @@ sudo echo "Setting up ROS2-Baxter Git Repo"
 install_dependencies() {
     echo "| - Installing Dependencies"
 
+    update_upgrade_apt() {
+        echo "Updating and Upgrading APT" | S1
+        sudo apt update | S2
+        sudo apt upgrade | S2
+    }
+    update_upgrade_apt
     echo "Add Ubuntu Universe Repository" | S1
     sudo apt-get install software-properties-common -y | S2
     sudo add-apt-repository universe -y | S2
@@ -45,6 +51,7 @@ install_dependencies() {
     echo "Add ROS Key Repository" | S1
     echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null | S2
 
+    update_upgrade_apt
     echo "Install ROS1 Noetic" | S1
     sudo apt-get install ros-noetic-desktop-full -y | S2
 
@@ -54,6 +61,7 @@ install_dependencies() {
     echo "Install ROS1 Noetic MoveIT" | S1
     sudo apt-get install ros-noetic-moveit -y | S2
 
+    update_upgrade_apt
     echo "Install ROS2 Galactic" | S1
     sudo apt-get install ros-galactic-desktop -y | S2
 
@@ -63,6 +71,7 @@ install_dependencies() {
     echo "Install Python3 Catkin Tools" | S1
     sudo apt-get install python3-catkin-tools -y | S2
 
+    update_upgrade_apt
     echo "Install Python3 PIP" | S1
     sudo apt-get install python3-pip -y | S2
 
@@ -81,6 +90,7 @@ install_dependencies() {
     echo "Install Build-Essential" | S1
     sudo apt-get install build-essential -y | S2
 
+    update_upgrade_apt
     echo "Initialize ROSDEP" | S1
     sudo rosdep init | S2
     rosdep update | S2
