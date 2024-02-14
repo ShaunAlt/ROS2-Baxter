@@ -39,7 +39,7 @@ install_dependencies() {
     sudo add-apt-repository universe -y | S2
     
     echo "Setup packages.ros.org" | S1
-    sudo sh -c 'echo "deb https://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' | S2
+    sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' | S2
 
     echo "Install CURL" | S1
     sudo apt-get install curl -y | S2
