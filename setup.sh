@@ -30,8 +30,8 @@ install_dependencies() {
 
     update_upgrade_apt() {
         echo "Updating and Upgrading APT" | S1
-        sudo apt update | S2
-        sudo apt upgrade | S2
+        sudo apt update -y 2>&1 | S2
+        sudo apt upgrade -y 2>&1 | S2
     }
     update_upgrade_apt
     echo "Add Ubuntu Universe Repository" | S1
