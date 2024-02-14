@@ -3,11 +3,10 @@ Written by Shaun Altmann
 
 ## Using with Baxter
 1. Open up a new terminal in the Ubuntu 20.04 machine you are using to connect with Baxter.
-2. `git clone https://github.com/ShaunAlt/ROS2-Baxter.git`
-3. `cd ROS2-Baxter\`
-4. `bash setup.sh` (May take a couple of minutes).
-5. Go into the `ros_ws` and edit the `baxter.sh` file on line 27, changing `your_hostname` to the name of the machine (e.g. `baxter-Alienware-Area-51-R5`). PLEASE NOTE this is
-       the name of the machine, not the username.
+2. Install `git` (if not already installed) by running `sudo apt install git`.
+3. `git clone https://github.com/ShaunAlt/ROS2-Baxter.git`.
+4. `cd ROS2-Baxter\`.
+5. `bash setup.sh` (May take a couple of minutes).
 
 ## Aliases
 The following aliases are defined in the `setup.sh` shell script:
@@ -29,17 +28,14 @@ The following aliases are defined in the `setup.sh` shell script:
 
 ## Starting up the Bridge
 Make sure that Baxter is plugged in to the machine and the network settings have been set so that only the connection to Baxter is being used.
-Run `baxter_connect` in a new terminal to connect to Baxter and run the bridge.
+Run `run_bridge` in a new terminal to connect to Baxter and run the bridge.
 
 ## Running the MoveIT Controller
-TODO: Create the Launch File for this.
+Open a new terminal, and run the following command: `run_moveit`.
 
 ## Running the ROS2 Baxter Main Controller
-TODO: Finish creating this controller.
-Currently there are many tests that can be completed with Baxter:
-* Open up a new terminal and run the baxter bridge using `baxter_connect`.
-* Whilst the bridge is running, open up a new terminal and go use `ros2_ws`.
-* Then use `ros2 run baxter_dev ...` to run whichever tests you want. You can use `tab` to see the options.
-* To see what each test does, go to `ros2_ws/src/baxter_dev/baxter_dev`.
+Open a new terminal, and run the following command: `run_sweeper`.
+Instead of running `run_bridge`, `run_moveit`, `run_image`, and `run_sweeper` all in different tabs, you can simply do `run_all` instead.
 
 ## Streaming Camera Data from Baxter
+Open a new terminal, then run the following command: `run_image`.
