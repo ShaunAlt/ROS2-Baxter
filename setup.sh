@@ -27,25 +27,69 @@ sudo echo "Setting up ROS2-Baxter Git Repo"
 # Installing Dependencies
 install_dependencies() {
     echo "| - Installing Dependencies"
-    echo "Python3 Catkin Tools" | S1
-    sudo apt-get install python3-catkin-tools | S2
-    echo "ROS1 Noetic MoveIT" | S1
-    sudo apt-get install ros-noetic-moveit | S2
-    echo "ROS1 Noetic Catkin" | S1
+
+    echo "Add Ubuntu Universe Repository" | S1
+    sudo apt-get install software-properties-common | S2
+    sudo add-apt-repository universe | S2
+    
+    echo "Setup packages.ros.org" | S1
+    sudo sh -c 'echo "deb https://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' | S2
+
+    echo "Install CURL" | S1
+    sudo apt-get install curl | S2
+
+    echo "Setup ROS Keys" | S1
+    sudo curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add - | S2
+    sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg | S2
+
+    echo "Add ROS Key Repository" | S1
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null | S2
+
+    echo "Install ROS1 Noetic" | S1
+    sudo apt-get install ros-noetic-desktop-full | S2
+
+    echo "Install ROS1 Noetic Catkin" | S1
     sudo apt-get install ros-noetic-catkin | S2
-    echo "ROS2 Galactic Desktop" | S1
+
+    echo "Install ROS1 Noetic MoveIT" | S1
+    sudo apt-get install ros-noetic-moveit | S2
+
+    echo "Install ROS2 Galactic" | S1
     sudo apt-get install ros-galactic-desktop | S2
-    echo "ROS2 Galactic ROS Base" | S1
-    sudo apt-get install ros-galactic-ros-base | S2
-    echo "ROS Developer Tools" | S1
+
+    echo "Install ROS Developer Tools" | S1
     sudo apt-get install ros-dev-tools | S2
-    echo "Python3 PIP" | S1
+
+    echo "Install Python3 Catkin Tools" | S1
+    sudo apt-get install python3-catkin-tools | S2
+
+    echo "Install Python3 PIP" | S1
     sudo apt-get install python3-pip | S2
-    echo "PIP Packages" | S1
-    echo "PyAutoGUI" | S2
-    pip install pyautogui==0.9.54 | S3
-    echo "OpenCV 2" | S2
-    pip install opencv-python==4.4.0.46 | S3
+
+    echo "Install Python3 ROSDEP" | S1
+    sudo apt-get install python3-rosdep | S2
+
+    echo "Install Python3 ROSINSTALL" | S1
+    sudo apt-get install python3-rosinstall | S2
+
+    echo "Install Python3 ROSINSTALL-GENERATOR" | S1
+    sudo apt-get install python3-rosinstall-generator | S2
+
+    echo "Install Python3 WSTOOL" | S1
+    sudo apt-get install python3-wstool | S2
+
+    echo "Install Build-Essential" | S1
+    sudo apt-get install build-essential | S2
+
+    echo "Initialize ROSDEP" | S1
+    sudo rosdep init | S2
+    rosdep update | S2
+
+    echo "Install PIP - PyAutoGUI" | S1
+    pip install pyautogui==0.9.54 | S2
+
+    echo "Install PIP - OpenCV" | S1
+    pip install opencv-python==4.4.0.46 | S2
 }
 install_dependencies
 
