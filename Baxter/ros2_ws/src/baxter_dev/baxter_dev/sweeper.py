@@ -155,15 +155,15 @@ class Robot():
 
     OCCUPANCY_GRID = (40, 30) # cols, rows
     GRIPPER_OPEN = 100
-    GRIPPER_CLOSED = 20
+    GRIPPER_CLOSED = 0
 
     # The following lines are copied from exact positions
     # TOP_LEFT = (0.757, 0.433, -0.332,)
     # TOP_RIGHT = (0.713, -0.646, -0.349,)
     # BOTTOM_RIGHT = (0.056, -0.640, -0.366,)
     COORDS_BRUSH = ( # X (Forwards/Backwards), Y (Left/Right), Z (Up/Down)
-        (0.725, 0.430, -0.360), # Top Left
-        (0.060, -0.640, -0.360), # Bottom Right
+        (0.725, 0.430, -0.365), # Top Left
+        (0.060, -0.640, -0.365), # Bottom Right
     )
     COORDS_PAN = ( # X (Forwards/Backwards), Y (Left/Right), Z (Up/Down)
         (0.910, 0.600, -0.350), # Top Left
@@ -376,7 +376,7 @@ class Robot():
                 (occ_bool.shape[1], occ_bool.shape[0])
             )
             pos_brush_new, pos_pan_new = (
-                (pos_brush_org[0], pos_brush_org[1]-0.2, pos_brush_org[2]),
+                (pos_brush_org[0]+0.05, pos_brush_org[1]-0.2, pos_brush_org[2]),
                 (pos_pan_org[0], pos_pan_org[1]+0.2, pos_pan_org[2]),
             )
             print(f'|\t| - Brush Point: {pos_brush_org} -> {pos_brush_new}')
@@ -394,15 +394,15 @@ class Robot():
             self.gripper_attach(True)
 
             # move both arms out of the way
-            print('| - Moving Arms out of Collision Space')
-            self._move_limbs(
-                POSES.SPACE.L,
-                POSES.SPACE.R,
-                skip_l = True,
-                skip_r = True,
-                timeout_l = 20,
-                timeout_r = 20
-            )
+            # print('| - Moving Arms out of Collision Space')
+            # self._move_limbs(
+            #     POSES.SPACE.L,
+            #     POSES.SPACE.R,
+            #     skip_l = True,
+            #     skip_r = True,
+            #     timeout_l = 20,
+            #     timeout_r = 20
+            # )
 
             # move to positions
             print('| - Moving to Sweep Starting Positions')
